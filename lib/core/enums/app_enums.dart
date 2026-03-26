@@ -9,3 +9,7 @@ enum ProfileTab { about, photos, interests }
 enum MatchStatus { pending, accepted, rejected, expired }
 
 enum OnboardingStep { gender, birthdate, photos, interests, location, done }
+
+enum AuthProvider { google, apple }
+
+enum RegistrationStep { basicInfo, professional, interests, complete }

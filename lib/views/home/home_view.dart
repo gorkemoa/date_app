@@ -4,12 +4,15 @@ import '../../core/theme/app_colors.dart';
 import '../../viewmodels/home/home_view_model.dart';
 import '../../viewmodels/discover/discover_view_model.dart';
 import '../../viewmodels/matches/matches_view_model.dart';
+import '../../viewmodels/nearby/nearby_view_model.dart';
 import '../../viewmodels/profile/profile_view_model.dart';
 import '../../services/demo/demo_discover_service.dart';
 import '../../services/demo/demo_match_service.dart';
+import '../../services/demo/demo_nearby_service.dart';
 import '../../services/demo/demo_profile_service.dart';
 import '../discover/discover_view.dart';
 import '../matches/matches_view.dart';
+import '../nearby/nearby_view.dart';
 import '../profile/profile_view.dart';
 
 class HomeView extends StatelessWidget {
@@ -20,6 +23,9 @@ class HomeView extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => NearbyViewModel(nearbyService: DemoNearbyService()),
+        ),
         ChangeNotifierProvider(
           create: (_) =>
               DiscoverViewModel(discoverService: DemoDiscoverService()),
@@ -41,6 +47,7 @@ class _HomeContent extends StatelessWidget {
   const _HomeContent();
 
   static const List<Widget> _pages = [
+    NearbyView(),
     DiscoverView(),
     MatchesView(),
     ProfileView(),
@@ -77,8 +84,13 @@ class _AppBottomNavBar extends StatelessWidget {
       selectedIndex: selectedIndex,
       onDestinationSelected: onTap,
       backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.borderFocus,
+      indicatorColor: AppColors.overlayLight,
       destinations: const [
+        NavigationDestination(
+          icon: Icon(Icons.location_on_outlined),
+          selectedIcon: Icon(Icons.location_on),
+          label: 'Yanımdakiler',
+        ),
         NavigationDestination(
           icon: Icon(Icons.explore_outlined),
           selectedIcon: Icon(Icons.explore),

@@ -14,6 +14,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
   static const String settings = '/settings';
+  static const String nearbyProfile = '/nearby/profile';
 
   static Map<String, WidgetBuilder> get routes => {
         splash: (_) => const OnboardingView(),

@@ -4,84 +4,81 @@ import '../../models/nearby/nearby_user_model.dart';
 import '../interfaces/i_nearby_service.dart';
 
 class DemoNearbyService implements INearbyService {
-  // İzmir merkez koordinatları
-  static const double _baseLat = 38.4192;
-  static const double _baseLng = 27.1287;
-
+  // Ben — İzmir Alsancak, Kahvecioğlu
   static const _me = NearbyUserModel(
     id: 'me',
     name: 'Ahmet',
     age: 28,
     photoUrl: 'https://i.pravatar.cc/200?img=12',
-    latitude: _baseLat,
-    longitude: _baseLng,
+    latitude: 38.4265,
+    longitude: 27.1422,
     distanceKm: 0,
     isMe: true,
-    occupation: 'Product Manager',
+    occupation: 'Yazılımcı',
+    venueName: 'Kahvecioğlu',
+    wantToMeetWith: [
+      'Tasarımcı', 'Grafik Tasarımcı', 'Pazarlamacı',
+      'İçerik Üretici', 'Girişimci', 'Sosyal Medya Uzmanı',
+    ],
   );
 
   static const _demoUsers = [
+    // Selin — Grafik Tasarımcı, PUBLIC, Vapor Cafe (Alsancak ~150m)
     NearbyUserModel(
       id: 'n1',
       name: 'Selin',
       age: 26,
-      // Alsancak - İzmir
       photoUrl: 'https://i.pravatar.cc/200?img=47',
-      latitude: 38.4361,
-      longitude: 27.1441,
-      distanceKm: 1.9,
+      latitude: 38.4272,
+      longitude: 27.1438,
+      distanceKm: 0.15,
+      isPrivate: false,
       occupation: 'Grafik Tasarımcı',
+      bio: 'UI/UX tasarımcısıyım, SaaS ürünleri üzerinde çalışıyorum. '
+          'Teknik kurucularla proje geliştirmeye hazırım.',
+      meetGoal: 'Freelance proje ortağı arıyorum',
+      venueName: 'Vapor Cafe',
+      interests: ['UI/UX', 'Figma', 'Branding', 'Freelance'],
+      wantToMeetWith: ['Yazılımcı', 'Girişimci', 'Proje Yöneticisi'],
     ),
+    // Ayşe — Sosyal Medya Uzmanı, PRIVATE, Kordon Cafe (~220m)
     NearbyUserModel(
       id: 'n2',
-      name: 'Zeynep',
-      age: 27,
-      // Konak civarı
+      name: 'Ayşe',
+      age: 28,
       photoUrl: 'https://i.pravatar.cc/200?img=44',
-      latitude: 38.4127,
-      longitude: 27.1384,
-      distanceKm: 0.8,
-      occupation: 'Öğretmen',
+      latitude: 38.4253,
+      longitude: 27.1448,
+      distanceKm: 0.22,
+      isPrivate: true,
+      occupation: 'Sosyal Medya Uzmanı',
+      venueName: 'Kordon Cafe',
+      wantToMeetWith: ['Yazılımcı', 'Girişimci'],
     ),
+    // Melis — İçerik Üretici, PUBLIC, Loca Cafe (~310m)
     NearbyUserModel(
       id: 'n3',
-      name: 'Elif',
-      age: 25,
-      // Bornova civarı
-      photoUrl: 'https://i.pravatar.cc/200?img=48',
-      latitude: 38.4620,
-      longitude: 27.2190,
-      distanceKm: 7.2,
-      occupation: 'Avukat',
-    ),
-    NearbyUserModel(
-      id: 'n4',
-      name: 'Ayşe',
-      age: 29,
-      // Karşıyaka civarı
-      photoUrl: 'https://i.pravatar.cc/200?img=46',
-      latitude: 38.4570,
-      longitude: 27.1120,
-      distanceKm: 4.5,
-      occupation: 'Doktor',
-    ),
-    NearbyUserModel(
-      id: 'n5',
       name: 'Melis',
-      age: 24,
-      // Buca civarı
+      age: 25,
       photoUrl: 'https://i.pravatar.cc/200?img=49',
-      latitude: 38.3840,
-      longitude: 27.1760,
-      distanceKm: 5.3,
-      occupation: 'Mimar',
+      latitude: 38.4280,
+      longitude: 27.1452,
+      distanceKm: 0.31,
+      isPrivate: false,
+      occupation: 'İçerik Üretici',
+      bio: 'Tech içerikleri üretiyorum, kendi SaaS ürünü kurmak '
+          'isteyen biriyle ortaklık arıyorum.',
+      meetGoal: 'Network ve potansiyel proje ortağı',
+      venueName: 'Loca Cafe',
+      interests: ['İçerik Pazarlama', 'SEO', 'Teknoloji', 'Podcast'],
+      wantToMeetWith: ['Yazılımcı', 'Girişimci', 'Startup'],
     ),
   ];
 
   @override
   Future<BaseResponse<List<NearbyUserModel>>> getNearbyUsers() async {
     await Future.delayed(AppConstants.mediumDelay);
-    return BaseResponse.success(data: _demoUsers);
+    return BaseResponse.success(data: List.unmodifiable(_demoUsers));
   }
 
   @override

@@ -84,7 +84,7 @@ class _AppBottomNavBar extends StatelessWidget {
       selectedIndex: selectedIndex,
       onDestinationSelected: onTap,
       backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.overlayLight,
+      indicatorColor: AppColors.borderFocus,
       destinations: const [
         NavigationDestination(
           icon: Icon(Icons.location_on_outlined),

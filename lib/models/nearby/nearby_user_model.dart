@@ -7,7 +7,13 @@ class NearbyUserModel {
   final double longitude;
   final double distanceKm;
   final bool isMe;
+  final bool isPrivate;
   final String? occupation;
+  final String? bio;
+  final String? meetGoal;
+  final String? venueName;
+  final List<String> interests;
+  final List<String> wantToMeetWith;
 
   const NearbyUserModel({
     required this.id,
@@ -18,7 +24,13 @@ class NearbyUserModel {
     required this.longitude,
     required this.distanceKm,
     this.isMe = false,
+    this.isPrivate = false,
     this.occupation,
+    this.bio,
+    this.meetGoal,
+    this.venueName,
+    this.interests = const [],
+    this.wantToMeetWith = const [],
   });
 
   String get nameAndAge => '$name, $age';

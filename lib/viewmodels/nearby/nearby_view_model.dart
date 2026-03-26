@@ -8,19 +8,44 @@ class NearbyViewModel extends BaseViewModel {
   NearbyViewModel({required INearbyService nearbyService})
       : _nearbyService = nearbyService;
 
+  // Benim profilim — gerçek API'de ProfileService'ten gelir
+  static const String _myOccupation = 'Yazılımcı';
+  static const List<String> _myWantToMeetWith = [
+    'Tasarımcı', 'Grafik Tasarımcı', 'Pazarlamacı',
+    'İçerik Üretici', 'Girişimci', 'Sosyal Medya Uzmanı',
+    'Proje Yöneticisi', 'Startup',
+  ];
+
   NearbyUserModel? _myLocation;
-  List<NearbyUserModel> _nearbyUsers = [];
+  List<NearbyUserModel> _allNearbyUsers = [];
   NearbyUserModel? _selectedUser;
 
   NearbyUserModel? get myLocation => _myLocation;
-  List<NearbyUserModel> get nearbyUsers => _nearbyUsers;
   NearbyUserModel? get selectedUser => _selectedUser;
 
-  // Haritada gösterilecek tüm noktalar (ben dahil)
+  // Sadece ilgi alanı uyumlu kullanıcılar görünür
+  List<NearbyUserModel> get nearbyUsers =>
+      _allNearbyUsers.where(_isCompatible).toList();
+
   List<NearbyUserModel> get allMarkers => [
         ?_myLocation,
-        ..._nearbyUsers,
+        ...nearbyUsers,
       ];
+
+  bool _isCompatible(NearbyUserModel user) {
+    if (user.isMe) return true;
+    final myOcc = _myOccupation.toLowerCase();
+    // Onlar benim türümü arıyor mu?
+    final theyWantMe = user.wantToMeetWith
+        .map((w) => w.toLowerCase())
+        .any((w) => myOcc.contains(w) || w.contains(myOcc));
+    // Ben onların türünü arıyor muyum?
+    final theirOcc = user.occupation?.toLowerCase() ?? '';
+    final iWantThem = _myWantToMeetWith
+        .map((w) => w.toLowerCase())
+        .any((w) => theirOcc.contains(w) || w.contains(theirOcc));
+    return theyWantMe || iWantThem;
+  }
 
   Future<void> loadNearby() async {
     setLoading();
@@ -33,9 +58,9 @@ class NearbyViewModel extends BaseViewModel {
     }
 
     _myLocation = myRes.data;
-    _nearbyUsers = usersRes.data ?? [];
+    _allNearbyUsers = usersRes.data ?? [];
 
-    if (_nearbyUsers.isEmpty) {
+    if (nearbyUsers.isEmpty) {
       setEmpty();
     } else {
       setIdle();

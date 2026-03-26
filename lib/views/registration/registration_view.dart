@@ -7,7 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../services/demo/demo_linkedin_parser_service.dart';
+import '../../services/linkedin_parser_service.dart';
 import '../../viewmodels/registration/registration_view_model.dart';
 import 'steps/step_basic_info_view.dart';
 import 'steps/step_complete_view.dart';
@@ -21,7 +21,7 @@ class RegistrationView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) => RegistrationViewModel(
-        linkedInParser: DemoLinkedInParserService(),
+        linkedInParser: LinkedInParserService(),
       ),
       child: const _RegistrationContent(),
     );
@@ -53,6 +53,18 @@ class _RegistrationContentState extends State<_RegistrationContent> {
 
   void _onStepChanged() {
     if (!mounted) return;
+
+    // Kayıt tamamlandı sinyali — ana sayfaya geç
+    if (_vm.readyToNavigateHome) {
+      _vm.clearNavigationFlag();
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRoutes.home,
+        (route) => false,
+      );
+      return;
+    }
+
     _pageController.animateToPage(
       _vm.stepIndex,
       duration: const Duration(milliseconds: 380),

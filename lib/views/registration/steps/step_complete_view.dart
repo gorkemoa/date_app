@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/routing/app_routes.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
 import '../../../core/theme/app_shadows.dart';
@@ -14,8 +13,9 @@ class StepCompleteView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vm = context.watch<RegistrationViewModel>();
-    final draft = vm.draft;
+    // context.read — bu ekranda reaktif state değişimi gerekmez,
+    // sadece draft verisi gösterilir ve navigasyon tetiklenir.
+    final draft = context.read<RegistrationViewModel>().draft;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return SafeArea(
@@ -99,11 +99,6 @@ class StepCompleteView extends StatelessWidget {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.home,
-                  (route) => false,
-                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -112,6 +107,9 @@ class StepCompleteView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
+                onPressed: () => context
+                    .read<RegistrationViewModel>()
+                    .finalizeRegistration(),
                 child: const Text(
                   'Keşfetmeye Başla',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

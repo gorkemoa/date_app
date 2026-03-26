@@ -7,6 +7,7 @@ class RegistrationDraftModel {
   final String bio;
   final List<String> selectedInterests;
   final bool linkedInImported;
+  final bool currentlyWorking;
 
   const RegistrationDraftModel({
     required this.fullName,
@@ -17,6 +18,7 @@ class RegistrationDraftModel {
     required this.bio,
     required this.selectedInterests,
     required this.linkedInImported,
+    this.currentlyWorking = true,
   });
 
   static const empty = RegistrationDraftModel(
@@ -28,7 +30,9 @@ class RegistrationDraftModel {
     bio: '',
     selectedInterests: [],
     linkedInImported: false,
+    currentlyWorking: true,
   );
+  
 
   RegistrationDraftModel copyWith({
     String? fullName,
@@ -39,6 +43,7 @@ class RegistrationDraftModel {
     String? bio,
     List<String>? selectedInterests,
     bool? linkedInImported,
+    bool? currentlyWorking,
   }) {
     return RegistrationDraftModel(
       fullName: fullName ?? this.fullName,
@@ -49,6 +54,7 @@ class RegistrationDraftModel {
       bio: bio ?? this.bio,
       selectedInterests: selectedInterests ?? this.selectedInterests,
       linkedInImported: linkedInImported ?? this.linkedInImported,
+      currentlyWorking: currentlyWorking ?? this.currentlyWorking,
     );
   }
 }

@@ -55,12 +55,14 @@ class RegistrationViewModel extends BaseViewModel {
     required String company,
     required String industry,
     required String bio,
+    required bool currentlyWorking,
   }) {
     _draft = _draft.copyWith(
       jobTitle: jobTitle,
       company: company,
       industry: industry,
       bio: bio,
+      currentlyWorking: currentlyWorking,
     );
     notifyListeners();
   }
@@ -108,27 +110,45 @@ class RegistrationViewModel extends BaseViewModel {
 
     if (res.isSuccess && res.data != null) {
       final result = res.data!;
+      final hasCurrentJob = result.currentCompany != null;
       _draft = _draft.copyWith(
         fullName: (_draft.fullName.isEmpty && result.fullName != null)
             ? result.fullName
             : _draft.fullName,
-        jobTitle: result.headline?.isNotEmpty == true
-            ? result.headline!
+        // Deneyim kartından gelen pozisyon ünvanı (Present ise dolu, yoksa boş)
+        jobTitle: result.currentJobTitle?.isNotEmpty == true
+            ? result.currentJobTitle!
             : _draft.jobTitle,
-        company: result.currentCompany?.isNotEmpty == true
-            ? result.currentCompany!
-            : _draft.company,
+        // Şu anki işveren (şenlik Present ise dolu)
+        company: hasCurrentJob ? result.currentCompany! : _draft.company,
+        // LinkedIn headline (profil başlığı) sektör alanına gider
+        industry: result.headline?.isNotEmpty == true
+            ? result.headline!
+            : _draft.industry,
         bio: result.summary?.isNotEmpty == true
             ? result.summary!
             : _draft.bio,
         selectedInterests: _mergeInterests(result.skills),
         linkedInImported: true,
+        currentlyWorking: hasCurrentJob,
       );
       _linkedInJustApplied = true;
       notifyListeners();
     } else {
       setError(res.error?.message ?? 'PDF okunamadı. Lütfen tekrar deneyin.');
     }
+  }
+
+  bool _readyToNavigateHome = false;
+  bool get readyToNavigateHome => _readyToNavigateHome;
+
+  void finalizeRegistration() {
+    _readyToNavigateHome = true;
+    notifyListeners();
+  }
+
+  void clearNavigationFlag() {
+    _readyToNavigateHome = false;
   }
 
   List<String> _mergeInterests(List<String> newSkills) {

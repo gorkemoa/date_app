@@ -23,12 +23,14 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
   late final TextEditingController _industryCtrl;
   late final TextEditingController _bioCtrl;
   late final RegistrationViewModel _vm;
+  bool _currentlyWorking = true;
 
   @override
   void initState() {
     super.initState();
     _vm = context.read<RegistrationViewModel>();
     final d = _vm.draft;
+    _currentlyWorking = d.currentlyWorking;
     _titleCtrl = TextEditingController(text: d.jobTitle);
     _companyCtrl = TextEditingController(text: d.company);
     _industryCtrl = TextEditingController(text: d.industry);
@@ -41,6 +43,7 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
     if (!mounted) return;
     if (_vm.linkedInJustApplied) {
       final d = _vm.draft;
+      setState(() => _currentlyWorking = d.currentlyWorking);
       _titleCtrl.text = d.jobTitle;
       _companyCtrl.text = d.company;
       _industryCtrl.text = d.industry;
@@ -62,9 +65,10 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
   void _save() {
     _vm.updateProfessional(
       jobTitle: _titleCtrl.text.trim(),
-      company: _companyCtrl.text.trim(),
+      company: _currentlyWorking ? _companyCtrl.text.trim() : '',
       industry: _industryCtrl.text.trim(),
       bio: _bioCtrl.text.trim(),
+      currentlyWorking: _currentlyWorking,
     );
   }
 
@@ -123,11 +127,62 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
 
             const _FieldLabel(label: 'Şirket'),
             const SizedBox(height: AppSpacing.xs),
-            AppTextField(
-              controller: _companyCtrl,
-              hint: 'örn. Trendyol, Getir, Startupınız',
-              onChanged: (_) => _save(),
-              textCapitalization: TextCapitalization.words,
+            AnimatedOpacity(
+              opacity: _currentlyWorking ? 1.0 : 0.4,
+              duration: const Duration(milliseconds: 200),
+              child: AppTextField(
+                controller: _companyCtrl,
+                hint: 'örn. Trendyol, Getir, Startupınız',
+                onChanged: _currentlyWorking ? (_) => _save() : null,
+                textCapitalization: TextCapitalization.words,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            // Checkbox: Şu anda çalışmıyorum
+            InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              onTap: () {
+                setState(() {
+                  _currentlyWorking = !_currentlyWorking;
+                  if (!_currentlyWorking) _companyCtrl.clear();
+                });
+                _save();
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: AppSpacing.xs, horizontal: 2),
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: !_currentlyWorking
+                            ? AppColors.primary
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: !_currentlyWorking
+                              ? AppColors.primary
+                              : AppColors.border,
+                          width: 1.5,
+                        ),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: !_currentlyWorking
+                          ? const Icon(Icons.check,
+                              color: Colors.white, size: 13)
+                          : null,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      'Şu anda çalışmıyorum',
+                      style: AppTextStyles.bodySmall
+                          .copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.base),
 

@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import '../../core/constants/app_constants.dart';
 import '../../core/enums/app_enums.dart';
 import '../../models/auth/auth_result_model.dart';
 import '../../models/common/base_response.dart';
@@ -8,7 +11,11 @@ class AuthViewModel extends BaseViewModel {
   final IAuthService _authService;
 
   AuthViewModel({required IAuthService authService})
-      : _authService = authService;
+      : _authService = authService,
+        backgroundVideoPath = AppConstants.onboardingVideoPaths[
+            Random().nextInt(AppConstants.onboardingVideoPaths.length)];
+
+  final String backgroundVideoPath;
 
   AuthResultModel? _authResult;
   AuthResultModel? get authResult => _authResult;

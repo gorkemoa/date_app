@@ -35,7 +35,7 @@ class RegistrationViewModel extends BaseViewModel {
   bool get canGoNext {
     switch (_step) {
       case RegistrationStep.basicInfo:
-        return _draft.fullName.trim().length >= 2 && _draft.birthYear != null;
+        return _draft.birthDate != null && _draft.gender != null;
       case RegistrationStep.professional:
         return _draft.jobTitle.trim().isNotEmpty;
       case RegistrationStep.interests:
@@ -45,8 +45,20 @@ class RegistrationViewModel extends BaseViewModel {
     }
   }
 
-  void updateBasicInfo({required String fullName, required int? birthYear}) {
-    _draft = _draft.copyWith(fullName: fullName, birthYear: birthYear);
+  void updateBasicInfo({
+    required DateTime? birthDate,
+    required UserGender? gender,
+    required String bio,
+    required String city,
+    required String district,
+  }) {
+    _draft = _draft.copyWith(
+      birthDate: birthDate,
+      gender: gender,
+      bio: bio,
+      city: city,
+      district: district,
+    );
     notifyListeners();
   }
 
@@ -54,14 +66,12 @@ class RegistrationViewModel extends BaseViewModel {
     required String jobTitle,
     required String company,
     required String industry,
-    required String bio,
     required bool currentlyWorking,
   }) {
     _draft = _draft.copyWith(
       jobTitle: jobTitle,
       company: company,
       industry: industry,
-      bio: bio,
       currentlyWorking: currentlyWorking,
     );
     notifyListeners();
@@ -112,22 +122,16 @@ class RegistrationViewModel extends BaseViewModel {
       final result = res.data!;
       final hasCurrentJob = result.currentCompany != null;
       _draft = _draft.copyWith(
-        fullName: (_draft.fullName.isEmpty && result.fullName != null)
-            ? result.fullName
-            : _draft.fullName,
         // Deneyim kartından gelen pozisyon ünvanı (Present ise dolu, yoksa boş)
         jobTitle: result.currentJobTitle?.isNotEmpty == true
             ? result.currentJobTitle!
             : _draft.jobTitle,
-        // Şu anki işveren (şenlik Present ise dolu)
+        // Şu anki işveren (Present ise dolu)
         company: hasCurrentJob ? result.currentCompany! : _draft.company,
         // LinkedIn headline (profil başlığı) sektör alanına gider
         industry: result.headline?.isNotEmpty == true
             ? result.headline!
             : _draft.industry,
-        bio: result.summary?.isNotEmpty == true
-            ? result.summary!
-            : _draft.bio,
         selectedInterests: _mergeInterests(result.skills),
         linkedInImported: true,
         currentlyWorking: hasCurrentJob,

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../viewmodels/registration/registration_view_model.dart';
@@ -21,7 +20,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
   late final TextEditingController _titleCtrl;
   late final TextEditingController _companyCtrl;
   late final TextEditingController _industryCtrl;
-  late final TextEditingController _bioCtrl;
   late final RegistrationViewModel _vm;
   bool _currentlyWorking = true;
 
@@ -34,7 +32,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
     _titleCtrl = TextEditingController(text: d.jobTitle);
     _companyCtrl = TextEditingController(text: d.company);
     _industryCtrl = TextEditingController(text: d.industry);
-    _bioCtrl = TextEditingController(text: d.bio);
     _vm.addListener(_onVmChanged);
   }
 
@@ -47,7 +44,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
       _titleCtrl.text = d.jobTitle;
       _companyCtrl.text = d.company;
       _industryCtrl.text = d.industry;
-      _bioCtrl.text = d.bio;
       _vm.clearLinkedInJustApplied();
     }
   }
@@ -58,7 +54,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
     _titleCtrl.dispose();
     _companyCtrl.dispose();
     _industryCtrl.dispose();
-    _bioCtrl.dispose();
     super.dispose();
   }
 
@@ -67,7 +62,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
       jobTitle: _titleCtrl.text.trim(),
       company: _currentlyWorking ? _companyCtrl.text.trim() : '',
       industry: _industryCtrl.text.trim(),
-      bio: _bioCtrl.text.trim(),
       currentlyWorking: _currentlyWorking,
     );
   }
@@ -194,17 +188,6 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
               onChanged: (_) => _save(),
               textCapitalization: TextCapitalization.words,
             ),
-            const SizedBox(height: AppSpacing.base),
-
-            const _FieldLabel(label: 'Hakkınızda'),
-            const SizedBox(height: AppSpacing.xs),
-            AppTextField(
-              controller: _bioCtrl,
-              hint: 'Kendinizi kısaca tanıtın...',
-              maxLines: 4,
-              onChanged: (_) => _save(),
-              keyboardType: TextInputType.multiline,
-            ),
 
             if (vm.hasError) ...[
               const SizedBox(height: AppSpacing.sm),
@@ -220,7 +203,7 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
 }
 
 // ──────────────────────────────────────────────
-// LinkedIn yükleme kartı
+// LinkedIn AI premium yükleme kartı
 // ──────────────────────────────────────────────
 class _LinkedInCard extends StatelessWidget {
   const _LinkedInCard({
@@ -235,97 +218,216 @@ class _LinkedInCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSuccess = isImported;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
-        padding: const EdgeInsets.all(AppSpacing.base),
         decoration: BoxDecoration(
-          color: isSuccess
-              ? AppColors.success.withValues(alpha: 0.06)
-              : const Color(0xFFF0EEFF),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: isSuccess
-                ? AppColors.success.withValues(alpha: 0.4)
-                : AppColors.primary.withValues(alpha: 0.3),
-          ),
-          boxShadow: AppShadows.sm,
-        ),
-        child: Row(
-          children: [
-            _LinkedInLogo(),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isSuccess
-                        ? '✓  LinkedIn CV bağlandı'
-                        : 'LinkedIn CV ile Otomatik Doldur',
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: isSuccess ? AppColors.success : AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isSuccess
-                        ? 'Bilgiler başarıyla aktarıldı'
-                        : 'PDF dosyanizi yukleyin, alanlar otomatik dolsun',
-                    style: const TextStyle(
-                        fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            if (isLoading)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.primary),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          gradient: isImported
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.success.withValues(alpha: 0.12),
+                    AppColors.success.withValues(alpha: 0.04),
+                  ],
+                )
+              : const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF1A1035),
+                    Color(0xFF2D1B69),
+                  ],
                 ),
-              )
-            else if (isSuccess)
-              const Icon(Icons.check_circle_rounded,
-                  color: AppColors.success, size: 22)
-            else
-              const Icon(Icons.upload_file_outlined,
-                  color: AppColors.primary, size: 22),
+          border: Border.all(
+            color: isImported
+                ? AppColors.success.withValues(alpha: 0.4)
+                : AppColors.primary.withValues(alpha: 0.5),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isImported
+                  ? AppColors.success.withValues(alpha: 0.12)
+                  : AppColors.primary.withValues(alpha: 0.25),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
           ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.base),
+          child: isImported
+              ? _ImportedState()
+              : _DefaultState(isLoading: isLoading),
         ),
       ),
     );
   }
 }
 
-class _LinkedInLogo extends StatelessWidget {
+class _DefaultState extends StatelessWidget {
+  const _DefaultState({required this.isLoading});
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: const Color(0xFF0077B5),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: const Center(
-        child: Text(
-          'in',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            fontStyle: FontStyle.italic,
+    return Row(
+      children: [
+        // LinkedIn logo
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0077B5),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0077B5).withValues(alpha: 0.4),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Text(
+              'in',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
           ),
         ),
-      ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'PDF CV ile Doldur',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF9A94FF), Color(0xFFF472B6)],
+                      ),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                    child: const Text(
+                      'AI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'PDF yükle, yapay zeka tüm alanları otomatik doldursun',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        if (isLoading)
+          const SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          )
+        else
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.2)),
+            ),
+            child: const Icon(
+              Icons.upload_file_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ImportedState extends StatelessWidget {
+  const _ImportedState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.success.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+            border: Border.all(
+                color: AppColors.success.withValues(alpha: 0.4)),
+          ),
+          child: const Icon(
+            Icons.check_rounded,
+            color: AppColors.success,
+            size: 20,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'PDF CV bağlandı',
+                style: AppTextStyles.labelMedium
+                    .copyWith(color: AppColors.success),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'Bilgiler yapay zeka ile başarıyla aktarıldı',
+                style: AppTextStyles.caption
+                    .copyWith(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.auto_awesome_rounded,
+            color: AppColors.success, size: 20),
+      ],
     );
   }
 }

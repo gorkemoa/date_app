@@ -15,4 +15,11 @@ class AppConstants {
 
   // Pagination
   static const int defaultPageSize = 20;
+
+  // Background video assets
+  static const List<String> onboardingVideoPaths = [
+    'assets/4318550-hd_1080_1920_30fps.mp4',
+    'assets/6912098-hd_1080_1920_25fps.mp4',
+    'assets/9047514-uhd_2160_3840_24fps.mp4',
+  ];
 }

@@ -42,6 +42,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   shared_preferences: ^2.3.2
   video_player: ^2.9.2
+  confetti: ^0.7.0
 
 dev_dependencies:
   flutter_test:
@@ -70,9 +71,6 @@ flutter:
     - assets/4318550-hd_1080_1920_30fps.mp4
     - assets/6912098-hd_1080_1920_25fps.mp4
     - assets/9047514-uhd_2160_3840_24fps.mp4
-    - assets/young-people-discussing-team-project-laptop.svg
-    - assets/young-people-discussing-work-project.svg
-    - assets/young-people-working-desk.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

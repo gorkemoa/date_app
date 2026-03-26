@@ -65,11 +65,16 @@ class _RegistrationContentState extends State<_RegistrationContent> {
       return;
     }
 
-    _pageController.animateToPage(
-      _vm.stepIndex,
-      duration: const Duration(milliseconds: 380),
-      curve: Curves.easeInOutCubic,
-    );
+    // Rebuild bittikten sonra sayfa geçişini yap — böylece
+    // PageView element'i yeniden oluşturulmuşsa bile doğru sayfaya gidilir.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _pageController.animateToPage(
+        _vm.stepIndex,
+        duration: const Duration(milliseconds: 380),
+        curve: Curves.easeInOutCubic,
+      );
+    });
   }
 
   @override
@@ -96,6 +101,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
               total: vm.totalSteps - 1,
             ),
           Expanded(
+            key: const ValueKey('reg_pager'),
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),

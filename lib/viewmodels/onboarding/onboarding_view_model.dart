@@ -1,31 +1,41 @@
-import '../../core/enums/app_enums.dart';
+import '../../models/onboarding/onboarding_slide_model.dart';
+import '../../services/interfaces/i_onboarding_service.dart';
 import '../base/base_view_model.dart';
 
 class OnboardingViewModel extends BaseViewModel {
-  OnboardingStep _currentStep = OnboardingStep.gender;
-  int _currentPageIndex = 0;
+  final IOnboardingService _service;
 
-  OnboardingStep get currentStep => _currentStep;
-  int get currentPageIndex => _currentPageIndex;
-  bool get isLastStep => _currentStep == OnboardingStep.done;
+  OnboardingViewModel({required IOnboardingService service})
+      : _service = service;
 
-  void nextStep() {
-    final steps = OnboardingStep.values;
-    final currentIdx = steps.indexOf(_currentStep);
-    if (currentIdx < steps.length - 1) {
-      _currentStep = steps[currentIdx + 1];
-      _currentPageIndex++;
-      notifyListeners();
+  List<OnboardingSlideModel> _slides = [];
+  int _currentIndex = 0;
+
+  List<OnboardingSlideModel> get slides => _slides;
+  int get currentIndex => _currentIndex;
+  bool get isLastSlide => _slides.isNotEmpty && _currentIndex == _slides.length - 1;
+  int get totalSlides => _slides.length;
+
+  Future<void> load() async {
+    setLoading();
+    final response = await _service.getSlides();
+    if (response.isSuccess && response.hasData) {
+      _slides = response.data!;
+      _slides.isEmpty ? setEmpty() : setIdle();
+    } else {
+      setError(response.message);
     }
   }
 
-  void previousStep() {
-    final steps = OnboardingStep.values;
-    final currentIdx = steps.indexOf(_currentStep);
-    if (currentIdx > 0) {
-      _currentStep = steps[currentIdx - 1];
-      _currentPageIndex--;
-      notifyListeners();
-    }
+  void goToPage(int index) {
+    if (index < 0 || index >= _slides.length) return;
+    _currentIndex = index;
+    notifyListeners();
+  }
+
+  void nextPage() {
+    if (isLastSlide) return;
+    _currentIndex++;
+    notifyListeners();
   }
 }

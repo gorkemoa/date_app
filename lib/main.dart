@@ -19,7 +19,7 @@ class DateApp extends StatelessWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      initialRoute: AppRoutes.splash,
+      initialRoute: AppRoutes.onboarding,
       routes: AppRoutes.routes,
     );
   }

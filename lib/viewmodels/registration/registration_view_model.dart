@@ -39,7 +39,7 @@ class RegistrationViewModel extends BaseViewModel {
       case RegistrationStep.professional:
         return _draft.jobTitle.trim().isNotEmpty;
       case RegistrationStep.interests:
-        return _draft.selectedInterests.length >= 3;
+        return _draft.selectedInterests.isNotEmpty;
       case RegistrationStep.complete:
         return true;
     }
@@ -71,7 +71,7 @@ class RegistrationViewModel extends BaseViewModel {
     final current = List<String>.from(_draft.selectedInterests);
     if (current.contains(interest)) {
       current.remove(interest);
-    } else if (current.length < 10) {
+    } else if (current.length < 3) {
       current.add(interest);
     }
     _draft = _draft.copyWith(selectedInterests: current);
@@ -160,7 +160,7 @@ class RegistrationViewModel extends BaseViewModel {
             skill.toLowerCase().contains(i.toLowerCase()),
       );
       for (final m in matched) {
-        if (!current.contains(m) && current.length < 10) {
+        if (!current.contains(m) && current.length < 3) {
           current.add(m);
         }
       }

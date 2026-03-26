@@ -29,12 +29,12 @@ class StepInterestsView extends StatelessWidget {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: Text(
-              count < 3
-                  ? 'En az 3 seçin  ($count / 3)'
-                  : '$count alan seçildi  ·  max. 10',
+              count == 0
+                  ? 'En az 1 ilgi alanı seçin'
+                  : '$count alan seçildi  ·  max. 3',
               key: ValueKey('$count'),
               style: AppTextStyles.bodyLarge.copyWith(
-                color: count >= 3
+                color: count > 0
                     ? AppColors.success
                     : AppColors.textSecondary,
               ),

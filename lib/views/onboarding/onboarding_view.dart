@@ -131,6 +131,7 @@ class _OnboardingContentState extends State<_OnboardingContent> {
               slide: vm.slides[vm.currentIndex],
               vm: vm,
               onNext: () => _handleNext(context, vm),
+              currentIndex: vm.currentIndex,
             ),
           ),
         ],
@@ -237,18 +238,121 @@ class _CinematicGradient extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Bottom content: title, description, dots, button
+// Bottom content: staggered entrance animation on every slide change
 // ─────────────────────────────────────────────────────────────────
-class _BottomContent extends StatelessWidget {
+class _BottomContent extends StatefulWidget {
   const _BottomContent({
     required this.slide,
     required this.vm,
     required this.onNext,
+    required this.currentIndex,
   });
 
   final OnboardingSlideModel slide;
   final OnboardingViewModel vm;
   final VoidCallback onNext;
+  final int currentIndex;
+
+  @override
+  State<_BottomContent> createState() => _BottomContentState();
+}
+
+class _BottomContentState extends State<_BottomContent>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  // Layer 1 — step badge  (enters first, fastest)
+  late final Animation<double> _badgeFade;
+  late final Animation<Offset> _badgeSlide;
+
+  // Layer 2 — title
+  late final Animation<double> _titleFade;
+  late final Animation<Offset> _titleSlide;
+
+  // Layer 3 — description
+  late final Animation<double> _descFade;
+  late final Animation<Offset> _descSlide;
+
+  // Layer 4 — CTA row (dots + button)
+  late final Animation<double> _ctaFade;
+  late final Animation<Offset> _ctaSlide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 740),
+    );
+    _buildAnimations();
+    _ctrl.forward();
+  }
+
+  void _buildAnimations() {
+    // All layers share the same Offset direction (subtle upward drift).
+    // Each layer has its own Interval so they enter one after another.
+    const slideBegin = Offset(0.0, 0.14);
+    const slideEnd = Offset.zero;
+    const ease = Curves.easeOutCubic;
+
+    // Layer 1 — badge: 0 → 320ms  (Interval 0.00 – 0.43)
+    _badgeFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.00, 0.43, curve: Curves.easeOut),
+    );
+    _badgeSlide = Tween(begin: slideBegin, end: slideEnd).animate(
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.00, 0.43, curve: ease)),
+    );
+
+    // Layer 2 — title: 80ms → 440ms  (Interval 0.11 – 0.59)
+    _titleFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.11, 0.59, curve: Curves.easeOut),
+    );
+    _titleSlide = Tween(begin: slideBegin, end: slideEnd).animate(
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.11, 0.59, curve: ease)),
+    );
+
+    // Layer 3 — description: 200ms → 540ms  (Interval 0.27 – 0.73)
+    _descFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.27, 0.73, curve: Curves.easeOut),
+    );
+    _descSlide = Tween(begin: slideBegin, end: slideEnd).animate(
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.27, 0.73, curve: ease)),
+    );
+
+    // Layer 4 — CTA row: 330ms → 680ms  (Interval 0.45 – 0.92)
+    _ctaFade = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.45, 0.92, curve: Curves.easeOut),
+    );
+    _ctaSlide = Tween(begin: slideBegin, end: slideEnd).animate(
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.45, 0.92, curve: ease)),
+    );
+  }
+
+  @override
+  void didUpdateWidget(_BottomContent old) {
+    super.didUpdateWidget(old);
+    if (old.currentIndex != widget.currentIndex) {
+      _ctrl
+        ..reset()
+        ..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  String get _stepLabel {
+    final n = widget.currentIndex + 1;
+    final t = widget.vm.totalSlides;
+    return '${n.toString().padLeft(2, '0')}  /  ${t.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,36 +369,110 @@ class _BottomContent extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            slide.title,
-            style: AppTextStyles.displayMedium.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
-              height: 1.15,
+          // — Layer 1: step badge ——————————————————————————————
+          FadeTransition(
+            opacity: _badgeFade,
+            child: SlideTransition(
+              position: _badgeSlide,
+              child: _StepBadge(label: _stepLabel),
             ),
           ),
           const SizedBox(height: AppSpacing.md),
-          Text(
-            slide.description,
-            style: AppTextStyles.bodyLarge.copyWith(
-              color: Colors.white.withValues(alpha: 0.72),
-              height: 1.6,
+
+          // — Layer 2: title ———————————————————————————————————
+          FadeTransition(
+            opacity: _titleFade,
+            child: SlideTransition(
+              position: _titleSlide,
+              child: Text(
+                widget.slide.title,
+                style: AppTextStyles.displayMedium.copyWith(
+                  color: Colors.white,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.8,
+                  height: 1.15,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+
+          // — Layer 3: description —————————————————————————————
+          FadeTransition(
+            opacity: _descFade,
+            child: SlideTransition(
+              position: _descSlide,
+              child: Text(
+                widget.slide.description,
+                style: AppTextStyles.bodyLarge.copyWith(
+                  color: Colors.white.withValues(alpha: 0.68),
+                  height: 1.65,
+                  letterSpacing: 0.1,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _PageDots(
-                total: vm.totalSlides,
-                current: vm.currentIndex,
+
+          // — Layer 4: dots + CTA button ———————————————————————
+          FadeTransition(
+            opacity: _ctaFade,
+            child: SlideTransition(
+              position: _ctaSlide,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _PageDots(
+                    total: widget.vm.totalSlides,
+                    current: widget.vm.currentIndex,
+                  ),
+                  const Spacer(),
+                  _NextButton(
+                    isLast: widget.vm.isLastSlide,
+                    onNext: widget.onNext,
+                  ),
+                ],
               ),
-              const Spacer(),
-              _NextButton(isLast: vm.isLastSlide, onNext: onNext),
-            ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Step counter badge — e.g. "01  /  03"
+// ─────────────────────────────────────────────────────────────────
+class _StepBadge extends StatelessWidget {
+  const _StepBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs + 2,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSpacing.xxl),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.22),
+          width: 0.8,
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          letterSpacing: 1.8,
+        ),
       ),
     );
   }

@@ -36,8 +36,7 @@ class HomeView extends StatelessWidget {
           create: (_) => MatchesViewModel(matchService: DemoMatchService()),
         ),
         ChangeNotifierProvider(
-          create: (_) =>
-              ProfileViewModel(profileService: DemoProfileService()),
+          create: (_) => ProfileViewModel(profileService: DemoProfileService()),
         ),
       ],
       child: const _HomeContent(),
@@ -59,10 +58,7 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final vm = context.watch<HomeViewModel>();
     return Scaffold(
-      body: IndexedStack(
-        index: vm.selectedIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: vm.selectedIndex, children: _pages),
       bottomNavigationBar: _AppBottomNavBar(
         selectedIndex: vm.selectedIndex,
         onTap: vm.onTabChanged,
@@ -72,10 +68,7 @@ class _HomeContent extends StatelessWidget {
 }
 
 class _AppBottomNavBar extends StatelessWidget {
-  const _AppBottomNavBar({
-    required this.selectedIndex,
-    required this.onTap,
-  });
+  const _AppBottomNavBar({required this.selectedIndex, required this.onTap});
 
   final int selectedIndex;
   final ValueChanged<int> onTap;
@@ -94,14 +87,20 @@ class _AppBottomNavBar extends StatelessWidget {
     Icons.person_rounded,
   ];
 
+  // Per-tab active colors: Yakında=coral, Keşfet=mavi, Bağlantılar=lime, Profil=coral
+  static const _tabColors = [
+    AppColors.primary,
+    AppColors.secondary,
+    AppColors.accent,
+    AppColors.primary,
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: Border(
-          top: BorderSide(color: AppColors.border, width: 0.5),
-        ),
+        border: Border(top: BorderSide(color: AppColors.border, width: 0.5)),
         boxShadow: [
           BoxShadow(
             color: Color(0x0F000000),
@@ -120,6 +119,7 @@ class _AppBottomNavBar extends StatelessWidget {
           child: Row(
             children: List.generate(4, (i) {
               final isActive = i == selectedIndex;
+              final tabColor = _tabColors[i];
               return Expanded(
                 child: GestureDetector(
                   onTap: () => onTap(i),
@@ -135,18 +135,16 @@ class _AppBottomNavBar extends StatelessWidget {
                         ),
                         decoration: isActive
                             ? BoxDecoration(
-                                color: AppColors.primary
-                                    .withValues(alpha: 0.10),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.full),
+                                color: tabColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
                               )
                             : null,
                         child: Icon(
                           isActive ? _activeIcons[i] : _icons[i],
                           size: 22,
-                          color: isActive
-                              ? AppColors.primary
-                              : AppColors.textDisabled,
+                          color: isActive ? tabColor : AppColors.textDisabled,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -157,9 +155,7 @@ class _AppBottomNavBar extends StatelessWidget {
                           fontWeight: isActive
                               ? FontWeight.w700
                               : FontWeight.w400,
-                          color: isActive
-                              ? AppColors.primary
-                              : AppColors.textDisabled,
+                          color: isActive ? tabColor : AppColors.textDisabled,
                         ),
                         child: Text(_labels[i]),
                       ),

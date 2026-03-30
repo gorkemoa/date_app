@@ -141,6 +141,23 @@ class _RegistrationContentState extends State<_RegistrationContent> {
 
   Widget _buildNavBar(BuildContext context, RegistrationViewModel vm) {
     final isLastActionStep = vm.step == RegistrationStep.interests;
+    
+    // Step-based color for the primary button
+    final Color buttonColor;
+    switch (vm.step) {
+      case RegistrationStep.basicInfo:
+        buttonColor = AppColors.primary; // Coral
+        break;
+      case RegistrationStep.professional:
+        buttonColor = AppColors.secondary; // Blue
+        break;
+      case RegistrationStep.interests:
+        buttonColor = AppColors.accent; // Lime
+        break;
+      default:
+        buttonColor = AppColors.primary;
+    }
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.base,
@@ -158,9 +175,9 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         child: ElevatedButton(
           onPressed: vm.canGoNext ? vm.nextStep : null,
           style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
+            backgroundColor: buttonColor,
             disabledBackgroundColor: AppColors.border,
-            foregroundColor: Colors.white,
+            foregroundColor: vm.step == RegistrationStep.interests ? AppColors.textOnAccent : Colors.white,
             disabledForegroundColor: AppColors.textDisabled,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -212,6 +229,15 @@ class _StepProgressBar extends StatelessWidget {
       child: Row(
         children: List.generate(total, (i) {
           final active = i <= currentIndex;
+          
+          final Color stepColor;
+          switch (i) {
+            case 0: stepColor = AppColors.primary; break;     // Coral
+            case 1: stepColor = AppColors.secondary; break;   // Blue
+            case 2: stepColor = AppColors.accent; break;      // Lime
+            default: stepColor = AppColors.primary;
+          }
+
           return Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
@@ -219,8 +245,11 @@ class _StepProgressBar extends StatelessWidget {
                   EdgeInsets.only(right: i < total - 1 ? AppSpacing.xs : 0),
               height: 4,
               decoration: BoxDecoration(
-                color: active ? AppColors.primary : AppColors.border,
+                color: active ? stepColor : AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
+                boxShadow: active 
+                  ? [BoxShadow(color: stepColor.withValues(alpha: 0.25), blurRadius: 4)]
+                  : null,
               ),
             ),
           );

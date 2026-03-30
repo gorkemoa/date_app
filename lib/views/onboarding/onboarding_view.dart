@@ -224,12 +224,12 @@ class _CinematicGradient extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          stops: [0.0, 0.3, 0.55, 1.0],
+          stops: [0.0, 0.2, 0.6, 1.0],
           colors: [
-            Color(0x55000000),
+            Color(0x33000000), // Lightened from 0x55
             Colors.transparent,
-            Color(0xBB0A0A1E),
-            Color(0xF50A0A1E),
+            Color(0x77050510), // Lightened from 0xBB
+            Color(0xCC050510), // Lightened from 0xF5
           ],
         ),
       ),
@@ -492,6 +492,16 @@ class _PageDots extends StatelessWidget {
     return Row(
       children: List.generate(total, (i) {
         final isActive = i == current;
+        
+        // Match the brand colors per page
+        final Color activeColor;
+        switch (i) {
+          case 0: activeColor = AppColors.primary; break;     // Coral
+          case 1: activeColor = AppColors.secondary; break;   // Blue
+          case 2: activeColor = AppColors.accent; break;      // Lime
+          default: activeColor = Colors.white;
+        }
+
         return AnimatedContainer(
           duration: const Duration(milliseconds: 280),
           curve: Curves.easeInOut,
@@ -500,9 +510,12 @@ class _PageDots extends StatelessWidget {
           height: 8,
           decoration: BoxDecoration(
             color: isActive
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.35),
+                ? activeColor
+                : Colors.white.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(AppRadius.full),
+            boxShadow: isActive 
+                ? [BoxShadow(color: activeColor.withValues(alpha: 0.4), blurRadius: 8)]
+                : null,
           ),
         );
       }),
@@ -524,20 +537,31 @@ class _NextButton extends StatelessWidget {
     if (isLast) {
       return GestureDetector(
         onTap: onNext,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.xl,
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
+            gradient: const LinearGradient(
+              colors: [AppColors.accent, Color(0xFF8CCF1E)], // Lime Gradient
+            ),
             borderRadius: BorderRadius.circular(AppRadius.full),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.accent.withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: Text(
-            'Başlayalım',
+            'Hemen Başlayalım',
             style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.primary,
+              color: AppColors.textOnAccent,
               fontSize: 15,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -547,23 +571,23 @@ class _NextButton extends StatelessWidget {
     return GestureDetector(
       onTap: onNext,
       child: Container(
-        width: 56,
-        height: 56,
+        width: 60,
+        height: 60,
         decoration: BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: const Icon(
           Icons.arrow_forward_rounded,
-          color: AppColors.primary,
-          size: 24,
+          color: Color(0xFF1E1E1E),
+          size: 28,
         ),
       ),
     );

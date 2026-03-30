@@ -153,11 +153,11 @@ class _StepProfessionalViewState extends State<StepProfessionalView> {
                       height: 20,
                       decoration: BoxDecoration(
                         color: !_currentlyWorking
-                            ? AppColors.primary
+                            ? AppColors.secondary
                             : Colors.transparent,
                         border: Border.all(
                           color: !_currentlyWorking
-                              ? AppColors.primary
+                              ? AppColors.secondary
                               : AppColors.border,
                           width: 1.5,
                         ),
@@ -245,14 +245,14 @@ class _LinkedInCard extends StatelessWidget {
           border: Border.all(
             color: isImported
                 ? AppColors.success.withValues(alpha: 0.4)
-                : AppColors.primary.withValues(alpha: 0.5),
-            width: 1,
+                : AppColors.secondary.withValues(alpha: 0.5),
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
               color: isImported
                   ? AppColors.success.withValues(alpha: 0.12)
-                  : AppColors.primary.withValues(alpha: 0.25),
+                  : AppColors.secondary.withValues(alpha: 0.2),
               blurRadius: 20,
               offset: const Offset(0, 6),
             ),

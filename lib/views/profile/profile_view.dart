@@ -351,7 +351,7 @@ class _CompletionCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.20)),
+              color: AppColors.accent.withValues(alpha: 0.30)),
           boxShadow: AppShadows.sm,
         ),
         child: Column(
@@ -471,16 +471,16 @@ class _InterestsCard extends StatelessWidget {
                     vertical: AppSpacing.xs,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.08),
+                    color: AppColors.accent.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(AppRadius.full),
                     border: Border.all(
-                      color: AppColors.primary.withValues(alpha: 0.20),
+                      color: AppColors.accent.withValues(alpha: 0.35),
                     ),
                   ),
                   child: Text(
                     interest,
                     style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.primary,
+                      color: AppColors.accentDark,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

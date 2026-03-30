@@ -37,7 +37,7 @@ class AppShadows {
 
   static const List<BoxShadow> primaryGlow = [
     BoxShadow(
-      color: Color(0x401A1A2E),
+      color: Color(0x40FF4D2A), // coral glow
       blurRadius: 16,
       offset: Offset(0, 4),
     ),
@@ -45,7 +45,15 @@ class AppShadows {
 
   static const List<BoxShadow> secondaryGlow = [
     BoxShadow(
-      color: Color(0x66D2FF57),
+      color: Color(0x66235EDE), // blue glow
+      blurRadius: 16,
+      offset: Offset(0, 4),
+    ),
+  ];
+
+  static const List<BoxShadow> accentGlow = [
+    BoxShadow(
+      color: Color(0x669CDE23), // lime glow
       blurRadius: 16,
       offset: Offset(0, 4),
     ),

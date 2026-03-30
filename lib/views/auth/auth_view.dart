@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/enums/app_enums.dart';
 import '../../core/routing/app_routes.dart';
@@ -106,15 +108,14 @@ class _AuthContentState extends State<_AuthContent> {
 
           // ── Content ──
           SafeArea(
-            child: Column(
-              children: [
-                const Spacer(),
-                _BrandLogo(),
-                const SizedBox(height: AppSpacing.lg),
-                const _TagLine(),
-                const Spacer(),
-                _BottomCard(vm: vm, onSignIn: _onSignIn),
-              ],
+            child: Center(
+              child: Container(
+                width: 340,
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+                child: SingleChildScrollView(
+                  child: _BottomCard(vm: vm, onSignIn: _onSignIn),
+                ),
+              ),
             ),
           ),
         ],
@@ -126,46 +127,11 @@ class _AuthContentState extends State<_AuthContent> {
 // ─────────────────────────────────────────────────────────────────
 // Brand mark
 // ─────────────────────────────────────────────────────────────────
-class _BrandLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.25),
-              width: 1.5,
-            ),
-          ),
-          child: const Icon(
-            Icons.hub_rounded,
-            color: Colors.white,
-            size: 34,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.base),
-        const Text(
-          'Rivorya',
-          style: TextStyle(
-            fontSize: 38,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            letterSpacing: -1.0,
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────
 // Tag line
 // ─────────────────────────────────────────────────────────────────
+// ignore: unused_element
 class _TagLine extends StatelessWidget {
   const _TagLine();
 
@@ -196,69 +162,89 @@ class _BottomCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl,
-        AppSpacing.xl + bottomPad,
+    return LiquidGlass.withOwnLayer(
+      shape: const LiquidRoundedRectangle(borderRadius: AppRadius.base),
+      settings: LiquidGlassSettings(
+       blur: 2.5
       ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.09),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(AppRadius.xxl),
-          topRight: Radius.circular(AppRadius.xxl),
-          bottomLeft: Radius.circular(AppRadius.xl),
-          bottomRight: Radius.circular(AppRadius.xl),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.massive,
         ),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.15),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'Hesabınıza giriş yapın',
-            style: AppTextStyles.headingMedium.copyWith(color: Colors.white),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            'Devam etmek için bir yöntem seçin',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.white.withValues(alpha: 0.55),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+            const _SmallLogo(),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              'Hesabınıza giriş yapın',
+              style: AppTextStyles.headingSmall.copyWith(
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          if (vm.hasError) ...[
-            _ErrorBanner(message: vm.errorMessage ?? ''),
-            const SizedBox(height: AppSpacing.base),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Bir yöntem seçin',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: Colors.white.withValues(alpha: 0.50),
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            if (vm.hasError) ...[
+              _ErrorBanner(message: vm.errorMessage ?? ''),
+              const SizedBox(height: AppSpacing.base),
+            ],
+            _GoogleButton(
+              isLoading: vm.isLoading,
+              onTap: () => onSignIn(context, AuthProvider.google),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _AppleButton(
+              isLoading: vm.isLoading,
+              onTap: () => onSignIn(context, AuthProvider.apple),
+            ),
           ],
-          _GoogleButton(
-            isLoading: vm.isLoading,
-            onTap: () => onSignIn(context, AuthProvider.google),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _AppleButton(
-            isLoading: vm.isLoading,
-            onTap: () => onSignIn(context, AuthProvider.apple),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Text(
-            'Devam ederek Kullanım Koşullarını ve Gizlilik Politikasını kabul etmiş olursunuz.',
-            style: AppTextStyles.caption.copyWith(
-              color: Colors.white.withValues(alpha: 0.35),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
+    );
+  }
+}
+
+class _SmallLogo extends StatelessWidget {
+  const _SmallLogo();
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.hub_rounded,
+            color: AppColors.primary,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        const Text(
+          'Rivorya',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            letterSpacing: -0.8,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -330,41 +316,21 @@ class _GoogleButton extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _GoogleLogo(),
+          SvgPicture.asset(
+            'assets/google.svg',
+            width: 22,
+            height: 22,
+          ),
           const SizedBox(width: AppSpacing.sm),
           const Text(
             'Google ile Devam Et',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A2E),
+              color: AppColors.textPrimary,
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _GoogleLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFDDDDDD)),
-      ),
-      child: const Center(
-        child: Text(
-          'G',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF4285F4),
-          ),
-        ),
       ),
     );
   }
@@ -383,12 +349,20 @@ class _AppleButton extends StatelessWidget {
       backgroundColor: const Color(0xFF1C1C1E),
       borderColor: Colors.white.withValues(alpha: 0.15),
       isLoading: isLoading,
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _AppleLogoIcon(),
-          SizedBox(width: AppSpacing.sm),
-          Text(
+          SvgPicture.asset(
+            'assets/apple.svg',
+            width: 20,
+            height: 20,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          const Text(
             'Apple ile Devam Et',
             style: TextStyle(
               fontSize: 15,
@@ -397,32 +371,6 @@ class _AppleButton extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AppleLogoIcon extends StatelessWidget {
-  const _AppleLogoIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 22,
-      height: 22,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
-      ),
-      child: const Center(
-        child: Text(
-          '\uF8FF',
-          style: TextStyle(
-            fontSize: 12,
-            color: Color(0xFF1C1C1E),
-            fontWeight: FontWeight.w700,
-          ),
-        ),
       ),
     );
   }

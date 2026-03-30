@@ -529,7 +529,7 @@ class _ConnectDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border:
-                    Border.all(color: AppColors.primary, width: 2.5),
+                    Border.all(color: AppColors.secondary, width: 2.5),
               ),
               child: ClipOval(
                 child: card.primaryPhoto != null
@@ -652,12 +652,12 @@ class _DialogAvatarFallback extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.primary.withValues(alpha: 0.12),
+      color: AppColors.secondary.withValues(alpha: 0.12),
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
           style: AppTextStyles.headingLarge
-              .copyWith(color: AppColors.primary),
+              .copyWith(color: AppColors.secondary),
         ),
       ),
     );
@@ -699,7 +699,7 @@ class _PhotoPlaceholder extends StatelessWidget {
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
           style: AppTextStyles.displayLarge
-              .copyWith(color: AppColors.primary.withValues(alpha: 0.4)),
+              .copyWith(color: AppColors.secondary.withValues(alpha: 0.4)),
         ),
       ),
     );
@@ -735,15 +735,16 @@ class _CardInterestChips extends StatelessWidget {
           padding:
               const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
+            // Eşleşen ilgi alanı lime ile vurgulanır, diğerleri şeffaf beyaz
             color: isHighlighted
-                ? AppColors.secondary
+                ? AppColors.accent
                 : Colors.white.withValues(alpha: 0.20),
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
           child: Text(
             i,
             style: TextStyle(
-              color: isHighlighted ? AppColors.textOnSecondary : Colors.white,
+              color: isHighlighted ? AppColors.textOnAccent : Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),

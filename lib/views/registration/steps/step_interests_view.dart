@@ -85,13 +85,13 @@ class _InterestChip extends StatelessWidget {
           vertical: AppSpacing.sm,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+          color: isSelected ? AppColors.accent : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.accent : AppColors.border,
             width: isSelected ? 1.5 : 1,
           ),
-          boxShadow: isSelected ? AppShadows.primaryGlow : AppShadows.sm,
+          boxShadow: isSelected ? AppShadows.accentGlow : AppShadows.sm,
         ),
         child: Text(
           label,
@@ -99,7 +99,7 @@ class _InterestChip extends StatelessWidget {
             fontSize: 13,
             fontWeight:
                 isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? AppColors.textOnAccent : AppColors.textSecondary,
           ),
         ),
       ),

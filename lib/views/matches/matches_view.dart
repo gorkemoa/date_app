@@ -261,7 +261,7 @@ class _NewConnectionChip extends StatelessWidget {
                   height: 56,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
+                    border: Border.all(color: AppColors.secondary, width: 2),
                   ),
                   child: ClipOval(
                     child: match.userPhoto != null
@@ -395,7 +395,7 @@ class _ConversationTile extends StatelessWidget {
                     width: 12,
                     height: 12,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: AppColors.accent,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
                     ),

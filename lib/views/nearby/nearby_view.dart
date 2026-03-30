@@ -372,14 +372,14 @@ class _NearbyHeader extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm, vertical: 2),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: const Text(
                     'Alsancak • İzmir',
                     style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.textOnPrimary,
+                        color: AppColors.textOnSecondary,
                         fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -462,7 +462,7 @@ class _NearbyBottomBar extends StatelessWidget {
                 child: Row(
                   children: [
                     const Icon(Icons.radio_button_checked,
-                        size: 11, color: AppColors.primary),
+                        size: 11, color: AppColors.secondary),
                     const SizedBox(width: 4),
                     Text(
                       'Çevrende ${vm.nearbyUsers.length} kişi müsait',
@@ -692,7 +692,7 @@ class _PublicProfileCard extends StatelessWidget {
               _CardActionButton(
                 label: 'Merhaba 👋',
                 icon: Icons.waving_hand_outlined,
-                color: AppColors.primary,
+                color: AppColors.accent,
                 filled: true,
                 onTap: onClose,
               ),
@@ -762,7 +762,7 @@ class _PrivateProfileCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.sm, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Text(

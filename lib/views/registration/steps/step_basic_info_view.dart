@@ -264,14 +264,17 @@ class _TappableField extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: hasValue
-                ? AppColors.primary.withValues(alpha: 0.5)
+                ? AppColors.primary
                 : AppColors.border,
+            width: hasValue ? 1.5 : 1,
           ),
           boxShadow: disabled
               ? null
               : [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
+                    color: hasValue 
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   )

@@ -1,9 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
 import 'package:liquid_swipe/liquid_swipe.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../core/routing/app_routes.dart';
+import '../auth/auth_view.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
@@ -81,7 +84,7 @@ class _OnboardingContentState extends State<_OnboardingContent> {
 
   void _handleNext(BuildContext context, OnboardingViewModel vm) {
     if (vm.isLastSlide) {
-      Navigator.pushReplacementNamed(context, AppRoutes.auth);
+      _navigateToAuth(context);
     } else {
       _liquidController.animateToPage(
         page: _activeIndex + 1,
@@ -91,7 +94,19 @@ class _OnboardingContentState extends State<_OnboardingContent> {
   }
 
   void _handleSkip(BuildContext context) {
-    Navigator.pushReplacementNamed(context, AppRoutes.auth);
+    _navigateToAuth(context);
+  }
+
+  void _navigateToAuth(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    // Wave originates from the bottom-right (where the CTA button lives)
+    final origin = Offset(size.width, size.height);
+    Navigator.of(context).pushReplacement(
+      _LiquidWaveRoute(
+        page: const AuthView(),
+        center: origin,
+      ),
+    );
   }
 
   void _onPageChanged(OnboardingViewModel vm, int index) {
@@ -406,83 +421,89 @@ class _BottomContentState extends State<_BottomContent>
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.xxl,
+        AppSpacing.xl,
         0,
-        AppSpacing.xxl,
+        AppSpacing.xl,
         AppSpacing.xl + bottomPad,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // — Layer 1: step badge ——————————————————————————————
-          FadeTransition(
-            opacity: _badgeFade,
-            child: SlideTransition(
-              position: _badgeSlide,
-              child: _StepBadge(label: _stepLabel),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-
-          // — Layer 2: title ———————————————————————————————————
-          FadeTransition(
-            opacity: _titleFade,
-            child: SlideTransition(
-              position: _titleSlide,
-              child: Text(
-                widget.slide.title,
-                style: AppTextStyles.displayMedium.copyWith(
-                  color: Colors.white,
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.8,
-                  height: 1.15,
+      child: LiquidGlass.withOwnLayer(
+        shape: const LiquidRoundedRectangle(borderRadius: 32),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // — Layer 1: step badge ——————————————————————————————
+              FadeTransition(
+                opacity: _badgeFade,
+                child: SlideTransition(
+                  position: _badgeSlide,
+                  child: _StepBadge(label: _stepLabel),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.md),
 
-          // — Layer 3: description —————————————————————————————
-          FadeTransition(
-            opacity: _descFade,
-            child: SlideTransition(
-              position: _descSlide,
-              child: Text(
-                widget.slide.description,
-                style: AppTextStyles.bodyLarge.copyWith(
-                  color: Colors.white.withValues(alpha: 0.68),
-                  height: 1.65,
-                  letterSpacing: 0.1,
+              // — Layer 2: title ———————————————————————————————————
+              FadeTransition(
+                opacity: _titleFade,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: Text(
+                    widget.slide.title,
+                    style: AppTextStyles.displayMedium.copyWith(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      height: 1.1,
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: AppSpacing.md),
 
-          // — Layer 4: dots + CTA button ———————————————————————
-          FadeTransition(
-            opacity: _ctaFade,
-            child: SlideTransition(
-              position: _ctaSlide,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _PageDots(
-                    total: widget.vm.totalSlides,
-                    current: widget.vm.currentIndex,
+              // — Layer 3: description —————————————————————————————
+              FadeTransition(
+                opacity: _descFade,
+                child: SlideTransition(
+                  position: _descSlide,
+                  child: Text(
+                    widget.slide.description,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: Colors.white.withValues(alpha: 0.68),
+                      height: 1.65,
+                      letterSpacing: 0.1,
+                    ),
                   ),
-                  const Spacer(),
-                  _NextButton(
-                    isLast: widget.vm.isLastSlide,
-                    onNext: widget.onNext,
-                  ),
-                ],
+                ),
               ),
-            ),
+              const SizedBox(height: AppSpacing.xl),
+
+              // — Layer 4: dots + CTA button ———————————————————————
+              FadeTransition(
+                opacity: _ctaFade,
+                child: SlideTransition(
+                  position: _ctaSlide,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _PageDots(
+                        total: widget.vm.totalSlides,
+                        current: widget.vm.currentIndex,
+                      ),
+                      const Spacer(),
+                      _NextButton(
+                        isLast: widget.vm.isLastSlide,
+                        onNext: widget.onNext,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -673,3 +694,75 @@ class _SkipButton extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Liquid wave page route — circular reveal from given origin point
+// ─────────────────────────────────────────────────────────────────
+class _LiquidWaveRoute extends PageRouteBuilder {
+  _LiquidWaveRoute({required Widget page, required this.center})
+      : super(
+          transitionDuration: const Duration(milliseconds: 700),
+          reverseTransitionDuration: const Duration(milliseconds: 500),
+          pageBuilder: (_, __, ___) => page,
+          transitionsBuilder: (_, animation, __, child) {
+            return _LiquidRevealTransition(
+              animation: animation,
+              center: center,
+              child: child,
+            );
+          },
+        );
+
+  final Offset center;
+}
+
+class _LiquidRevealTransition extends StatelessWidget {
+  const _LiquidRevealTransition({
+    required this.animation,
+    required this.center,
+    required this.child,
+  });
+
+  final Animation<double> animation;
+  final Offset center;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final maxRadius = math.sqrt(
+      math.pow(size.width, 2) + math.pow(size.height, 2),
+    );
+
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (_, __) {
+        final radius = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            ).value *
+            maxRadius;
+
+        return ClipPath(
+          clipper: _CircleRevealClipper(center: center, radius: radius),
+          child: child,
+        );
+      },
+    );
+  }
+}
+
+class _CircleRevealClipper extends CustomClipper<Path> {
+  const _CircleRevealClipper({required this.center, required this.radius});
+
+  final Offset center;
+  final double radius;
+
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius));
+  }
+
+  @override
+  bool shouldReclip(_CircleRevealClipper old) => old.radius != radius;
+}

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 import 'package:liquid_glass_renderer/liquid_glass_renderer.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/enums/app_enums.dart';
 import '../../core/routing/app_routes.dart';
@@ -40,7 +40,8 @@ class _AuthContentState extends State<_AuthContent> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initVideo(context.read<AuthViewModel>().backgroundVideoPath);
+      // 3. video olan '9047514-uhd_2160_3840_24fps.mp4' dosyasını direkt veriyoruz
+      _initVideo('assets/9047514-uhd_2160_3840_24fps.mp4');
     });
   }
 
@@ -49,12 +50,17 @@ class _AuthContentState extends State<_AuthContent> {
     await _videoController.initialize();
     await _videoController.setLooping(true);
     await _videoController.setVolume(0);
-    await _videoController.play();
-    if (mounted) setState(() => _videoReady = true);
+    
+    // Kırpılma (glitch) engellemek için aspect ratio ayarını force ediyoruz
+    if (mounted) {
+      setState(() => _videoReady = true);
+      _videoController.play();
+    }
   }
 
   @override
   void dispose() {
+    _videoController.pause(); // Dispose öncesi durdurmak stabilite sağlar
     _videoController.dispose();
     super.dispose();
   }
@@ -78,16 +84,26 @@ class _AuthContentState extends State<_AuthContent> {
         children: [
           // ── Video background ──
           if (_videoReady)
-            SizedBox.expand(
-              child: FittedBox(
-                fit: BoxFit.cover,
-                child: SizedBox(
-                  width: _videoController.value.size.width,
-                  height: _videoController.value.size.height,
-                  child: VideoPlayer(_videoController),
+            IgnorePointer(
+              child: SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  clipBehavior: Clip.hardEdge, // Tekrar döngüsünde kırpılmayı (glitch) engeller
+                  child: SizedBox(
+                    width: _videoController.value.size.width,
+                    height: _videoController.value.size.height,
+                    child: VideoPlayer(_videoController),
+                  ),
                 ),
               ),
             ),
+
+          // ── Glass Layer (Applied OVER the video) ──
+          LiquidGlass.withOwnLayer(
+            shape: const LiquidRoundedRectangle(borderRadius: 0),
+            settings: LiquidGlassSettings(blur: 7),
+            child: const SizedBox.expand(),
+          ),
 
           // ── Cinematic dark gradient overlay ──
           Container(
@@ -95,13 +111,12 @@ class _AuthContentState extends State<_AuthContent> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: [0.0, 0.25, 0.55, 1.0],
                 colors: [
-                  Color(0x77000000),
                   Colors.transparent,
-                  Color(0xCC050510),
-                  Color(0xFA050510),
+                  Colors.black54,
+                  Colors.black87,
                 ],
+                stops: [0.0, 0.6, 1.0],
               ),
             ),
           ),
@@ -109,12 +124,12 @@ class _AuthContentState extends State<_AuthContent> {
           // ── Content ──
           SafeArea(
             child: Center(
-              child: Container(
-                width: 340,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-                child: SingleChildScrollView(
-                  child: _BottomCard(vm: vm, onSignIn: _onSignIn),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.massive,
                 ),
+                child: _SignInContent(vm: vm, onSignIn: _onSignIn),
               ),
             ),
           ),
@@ -125,95 +140,59 @@ class _AuthContentState extends State<_AuthContent> {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Brand mark
+// Auth page content
 // ─────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────
-// Tag line
-// ─────────────────────────────────────────────────────────────────
-// ignore: unused_element
-class _TagLine extends StatelessWidget {
-  const _TagLine();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.massive),
-      child: Text(
-        'Doğru insanlarla yüz yüze,\ndoğru an, doğru yerde tanış.',
-        textAlign: TextAlign.center,
-        style: AppTextStyles.bodyLarge.copyWith(
-          color: Colors.white.withValues(alpha: 0.70),
-          height: 1.6,
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// Bottom glass card with buttons
-// ─────────────────────────────────────────────────────────────────
-class _BottomCard extends StatelessWidget {
-  const _BottomCard({required this.vm, required this.onSignIn});
+class _SignInContent extends StatelessWidget {
+  const _SignInContent({required this.vm, required this.onSignIn});
 
   final AuthViewModel vm;
   final Future<void> Function(BuildContext, AuthProvider) onSignIn;
 
   @override
   Widget build(BuildContext context) {
-    return LiquidGlass.withOwnLayer(
-      shape: const LiquidRoundedRectangle(borderRadius: AppRadius.base),
-      settings: LiquidGlassSettings(
-       blur: 2.5
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.massive,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const _SmallLogo(),
+        const SizedBox(height: AppSpacing.massive),
+        Text(
+          'Hesabınıza giriş yapın',
+          style: AppTextStyles.headingSmall.copyWith(
+            color: Colors.white,
+            fontSize: 34,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.0,
+          ),
+          textAlign: TextAlign.center,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: AppSpacing.md),
-            const _SmallLogo(),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Hesabınıza giriş yapın',
-              style: AppTextStyles.headingSmall.copyWith(
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Bir yöntem seçin',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.white.withValues(alpha: 0.50),
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            if (vm.hasError) ...[
-              _ErrorBanner(message: vm.errorMessage ?? ''),
-              const SizedBox(height: AppSpacing.base),
-            ],
-            _GoogleButton(
-              isLoading: vm.isLoading,
-              onTap: () => onSignIn(context, AuthProvider.google),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _AppleButton(
-              isLoading: vm.isLoading,
-              onTap: () => onSignIn(context, AuthProvider.apple),
-            ),
-          ],
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'Bir yöntem seçin',
+          style: AppTextStyles.bodySmall.copyWith(
+            color: Colors.white.withValues(alpha: 0.50),
+          ),
+          textAlign: TextAlign.center,
         ),
-      ),
+        const SizedBox(height: AppSpacing.massive),
+        if (vm.hasError) ...[
+          _ErrorBanner(message: vm.errorMessage ?? ''),
+          const SizedBox(height: AppSpacing.base),
+        ],
+        _GoogleButton(
+          isLoading: vm.isLoading,
+          onTap: () => onSignIn(context, AuthProvider.google),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        _AppleButton(
+          isLoading: vm.isLoading,
+          onTap: () => onSignIn(context, AuthProvider.apple),
+        ),
+      ],
     );
   }
 }
+
+// ── Auth page components ──
 
 class _SmallLogo extends StatelessWidget {
   const _SmallLogo();
@@ -318,8 +297,8 @@ class _GoogleButton extends StatelessWidget {
         children: [
           SvgPicture.asset(
             'assets/google.svg',
-            width: 22,
-            height: 22,
+            width: 20,
+            height: 20,
           ),
           const SizedBox(width: AppSpacing.sm),
           const Text(

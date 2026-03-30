@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:liquid_swipe/liquid_swipe.dart';
 import 'package:provider/provider.dart';
 import 'package:video_player/video_player.dart';
 
@@ -32,29 +33,59 @@ class _OnboardingContent extends StatefulWidget {
 }
 
 class _OnboardingContentState extends State<_OnboardingContent> {
-  late final PageController _pageController;
+  late final LiquidController _liquidController;
   int _activeIndex = 0;
+  List<VideoPlayerController>? _controllers;
+  bool _controllersInitializing = false;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _liquidController = LiquidController();
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
+    _controllers?.forEach((c) => c.dispose());
     super.dispose();
+  }
+
+  Future<void> _initControllersIfNeeded(List<OnboardingSlideModel> slides) async {
+    if (_controllers != null || _controllersInitializing) return;
+    _controllersInitializing = true;
+
+    final controllers = slides
+        .map((s) => VideoPlayerController.asset(s.videoPath))
+        .toList();
+
+    await Future.wait(
+      controllers.map((c) async {
+        try {
+          await c.initialize();
+          await c.setLooping(true);
+          await c.setVolume(0);
+        } catch (e) {
+          debugPrint('Video init error: $e');
+        }
+      }),
+    );
+
+    if (!mounted) {
+      for (final c in controllers) c.dispose();
+      return;
+    }
+
+    setState(() => _controllers = controllers);
+    controllers[0].play();
   }
 
   void _handleNext(BuildContext context, OnboardingViewModel vm) {
     if (vm.isLastSlide) {
       Navigator.pushReplacementNamed(context, AppRoutes.auth);
     } else {
-      vm.nextPage();
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.easeInOutCubic,
+      _liquidController.animateToPage(
+        page: _activeIndex + 1,
+        duration: 800,
       );
     }
   }
@@ -64,8 +95,16 @@ class _OnboardingContentState extends State<_OnboardingContent> {
   }
 
   void _onPageChanged(OnboardingViewModel vm, int index) {
+    if (_activeIndex == index) return;
+    final previous = _activeIndex;
     setState(() => _activeIndex = index);
     vm.goToPage(index);
+
+    if (_controllers != null) {
+      _controllers![previous].pause();
+      _controllers![previous].seekTo(Duration.zero);
+      _controllers![index].play();
+    }
   }
 
   @override
@@ -76,7 +115,10 @@ class _OnboardingContentState extends State<_OnboardingContent> {
       return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 2,
+          ),
         ),
       );
     }
@@ -87,7 +129,23 @@ class _OnboardingContentState extends State<_OnboardingContent> {
         body: Center(
           child: Text(
             'Bir hata oluştu.',
-            style: TextStyle(color: Colors.white),
+            style: AppTextStyles.bodyMedium,
+          ),
+        ),
+      );
+    }
+
+    // Kick off pre-initialization (idempotent)
+    _initControllersIfNeeded(vm.slides);
+
+    // Show loading until all controllers are ready
+    if (_controllers == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+            strokeWidth: 2,
           ),
         ),
       );
@@ -98,40 +156,70 @@ class _OnboardingContentState extends State<_OnboardingContent> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Full-screen paged video backgrounds
-          PageView.builder(
-            controller: _pageController,
+          // Full-screen Liquid Swipe — controllers are pre-initialized, no flicker
+          LiquidSwipe.builder(
             itemCount: vm.slides.length,
-            onPageChanged: (i) => _onPageChanged(vm, i),
             itemBuilder: (context, index) {
               return _VideoSlidePage(
-                slide: vm.slides[index],
-                isActive: index == _activeIndex,
+                key: ValueKey(index),
+                controller: _controllers![index],
               );
             },
+            liquidController: _liquidController,
+            onPageChangeCallback: (i) => _onPageChanged(vm, i),
+            enableLoop: false,
+            fullTransitionValue: 600,
+            enableSideReveal: false,
+            waveType: WaveType.liquidReveal,
+            ignoreUserGestureWhileAnimating: true,
           ),
 
           // Cinematic gradient overlay
           const _CinematicGradient(),
 
-          // Skip button — top right
+          // Progress indicators (Top)
+          Positioned(
+            top: MediaQuery.of(context).padding.top + AppSpacing.md,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            child: Row(
+              children: List.generate(
+                vm.slides.length,
+                (index) => Expanded(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    height: 3,
+                    decoration: BoxDecoration(
+                      color: index <= _activeIndex
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Skip button
           if (!vm.isLastSlide)
             Positioned(
-              top: MediaQuery.of(context).padding.top + AppSpacing.sm,
-              right: AppSpacing.base,
+              top: MediaQuery.of(context).padding.top + AppSpacing.lg,
+              right: AppSpacing.lg,
               child: _SkipButton(onTap: () => _handleSkip(context)),
             ),
 
-          // Bottom content: title + desc + dots + button
+          // Bottom content: title + desc + button
           Positioned(
             left: 0,
             right: 0,
             bottom: 0,
             child: _BottomContent(
-              slide: vm.slides[vm.currentIndex],
+              slide: vm.slides[_activeIndex],
               vm: vm,
               onNext: () => _handleNext(context, vm),
-              currentIndex: vm.currentIndex,
+              currentIndex: _activeIndex,
             ),
           ),
         ],
@@ -141,70 +229,26 @@ class _OnboardingContentState extends State<_OnboardingContent> {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Video slide — each page manages its own controller lifecycle
+// Video slide — receives a pre-initialized controller, no loading state
 // ─────────────────────────────────────────────────────────────────
-class _VideoSlidePage extends StatefulWidget {
-  const _VideoSlidePage({required this.slide, required this.isActive});
+class _VideoSlidePage extends StatelessWidget {
+  const _VideoSlidePage({
+    super.key,
+    required this.controller,
+  });
 
-  final OnboardingSlideModel slide;
-  final bool isActive;
-
-  @override
-  State<_VideoSlidePage> createState() => _VideoSlidePageState();
-}
-
-class _VideoSlidePageState extends State<_VideoSlidePage>
-    with AutomaticKeepAliveClientMixin {
-  late VideoPlayerController _controller;
-  bool _isInitialized = false;
-
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  void initState() {
-    super.initState();
-    _initController();
-  }
-
-  Future<void> _initController() async {
-    _controller = VideoPlayerController.asset(widget.slide.videoPath);
-    await _controller.initialize();
-    await _controller.setLooping(true);
-    await _controller.setVolume(0);
-    if (widget.isActive && mounted) await _controller.play();
-    if (mounted) setState(() => _isInitialized = true);
-  }
-
-  @override
-  void didUpdateWidget(_VideoSlidePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isActive != oldWidget.isActive && _isInitialized) {
-      widget.isActive ? _controller.play() : _controller.pause();
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  final VideoPlayerController controller;
 
   @override
   Widget build(BuildContext context) {
-    super.build(context);
-
-    if (!_isInitialized) {
-      return const ColoredBox(color: Colors.black);
-    }
-
     return SizedBox.expand(
       child: FittedBox(
         fit: BoxFit.cover,
+        clipBehavior: Clip.hardEdge,
         child: SizedBox(
-          width: _controller.value.size.width,
-          height: _controller.value.size.height,
-          child: VideoPlayer(_controller),
+          width: controller.value.size.width,
+          height: controller.value.size.height,
+          child: VideoPlayer(controller),
         ),
       ),
     );
@@ -219,18 +263,20 @@ class _CinematicGradient extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: [0.0, 0.2, 0.6, 1.0],
-          colors: [
-            Color(0x33000000), // Lightened from 0x55
-            Colors.transparent,
-            Color(0x77050510), // Lightened from 0xBB
-            Color(0xCC050510), // Lightened from 0xF5
-          ],
+    return IgnorePointer(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            stops: const [0.0, 0.4, 0.7, 1.0],
+            colors: [
+              Colors.black.withOpacity(0.6),
+              Colors.transparent,
+              Colors.black.withOpacity(0.4),
+              Colors.black.withOpacity(0.9),
+            ],
+          ),
         ),
       ),
     );

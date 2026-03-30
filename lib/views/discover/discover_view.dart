@@ -28,6 +28,19 @@ class _DiscoverViewState extends State<DiscoverView> {
     });
   }
 
+  void _showConnectDialog(BuildContext ctx, DiscoverCardModel card) {
+    showDialog<void>(
+      context: ctx,
+      builder: (dialogCtx) => _ConnectDialog(
+        card: card,
+        onConfirm: () {
+          ctx.read<DiscoverViewModel>().connect(card.id);
+          Navigator.pop(dialogCtx);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<DiscoverViewModel>();
@@ -55,7 +68,7 @@ class _DiscoverViewState extends State<DiscoverView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _DiscoverHeader(),
+            _DiscoverHeader(refresh: vm.timeUntilRefresh),
             _FilterChipsRow(
               filters: vm.availableFilters,
               selected: vm.selectedFilter,
@@ -77,35 +90,22 @@ class _DiscoverViewState extends State<DiscoverView> {
       return EmptyStateView(
         icon: Icons.filter_list_off_rounded,
         title: '"${vm.selectedFilter!}" ile kimse yok',
-        subtitle: 'Farklı bir filtre seçebilirsin',
-        actionLabel: 'Filtreyi Temizle',
+        subtitle: 'Farklı bir kategori seçebilirsin',
+        actionLabel: 'Sıfırla',
         onAction: () => context.read<DiscoverViewModel>().setFilter(null),
       );
     }
 
     if (filtered.isEmpty) {
-      return EmptyStateView(
-        icon: Icons.explore_outlined,
-        title: 'Yeni kişi kalmadı',
-        subtitle: 'Biraz sonra tekrar kontrol et',
-        actionLabel: 'Yenile',
-        onAction: () => context.read<DiscoverViewModel>().loadCards(),
+      return const EmptyStateView(
+        icon: Icons.people_outline_rounded,
+        title: 'Herkesle bağlandın!',
+        subtitle: 'Yeni grup yarın yenilenir',
       );
     }
 
     return CustomScrollView(
       slivers: [
-        // ── En uyumlu şeridi (filtre yoksa göster) ──
-        if (vm.topMatches.isNotEmpty && vm.selectedFilter == null)
-          SliverToBoxAdapter(
-            child: _TopMatchesRow(
-              cards: vm.topMatches,
-              onConnect: (id) =>
-                  context.read<DiscoverViewModel>().connect(id),
-            ),
-          ),
-
-        // ── Ana kart grid'i ──
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.base,
@@ -127,11 +127,9 @@ class _DiscoverViewState extends State<DiscoverView> {
                 key: ValueKey(card.id),
                 card: card,
                 activeFilter: vm.selectedFilter,
+                isPending: vm.isPendingRequest(card.id),
                 onTap: () => _openDetail(card, vm),
-                onConnect: () =>
-                    context.read<DiscoverViewModel>().connect(card.id),
-                onPass: () =>
-                    context.read<DiscoverViewModel>().pass(card.id),
+                onConnect: () => _showConnectDialog(context, card),
               );
             },
           ),
@@ -147,8 +145,7 @@ class _DiscoverViewState extends State<DiscoverView> {
         builder: (_) => DiscoverDetailView(
           card: card,
           activeFilter: vm.selectedFilter,
-          onConnect: () => vm.connect(card.id),
-          onPass: () => vm.pass(card.id),
+          onConnect: () => _showConnectDialog(context, card),
         ),
       ),
     );
@@ -159,7 +156,15 @@ class _DiscoverViewState extends State<DiscoverView> {
 // Header
 // ──────────────────────────────────────────────
 class _DiscoverHeader extends StatelessWidget {
-  const _DiscoverHeader();
+  const _DiscoverHeader({required this.refresh});
+
+  final Duration refresh;
+
+  String get _refreshLabel {
+    final h = refresh.inHours;
+    final m = refresh.inMinutes % 60;
+    return '${h}s ${m}dk sonra yenilenir';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,11 +177,21 @@ class _DiscoverHeader extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Keşfet', style: AppTextStyles.displayMedium),
-              Text(
-                'İlgi alanlarına göre insanlar',
-                style: AppTextStyles.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
+              const Text('Bugünün Grubu', style: AppTextStyles.displayMedium),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    size: 12,
+                    color: AppColors.textDisabled,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    _refreshLabel,
+                    style: AppTextStyles.caption
+                        .copyWith(color: AppColors.textDisabled),
+                  ),
+                ],
               ),
             ],
           ),
@@ -209,7 +224,7 @@ class _DiscoverHeader extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────
-// Filter chips strip
+// Filter chips — ortalanmış SingleChildScrollView
 // ──────────────────────────────────────────────
 class _FilterChipsRow extends StatelessWidget {
   const _FilterChipsRow({
@@ -224,25 +239,27 @@ class _FilterChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chips = <Widget>[
+      _FilterChip(
+        label: 'Tümü',
+        isSelected: selected == null,
+        onTap: () => onSelected(null),
+      ),
+      ...filters.map(
+        (f) => _FilterChip(
+          label: f,
+          isSelected: selected == f,
+          onTap: () => onSelected(f),
+        ),
+      ),
+    ];
+
     return SizedBox(
       height: 38,
-      child: ListView(
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        children: [
-          _FilterChip(
-            label: 'Tümü',
-            isSelected: selected == null,
-            onTap: () => onSelected(null),
-          ),
-          ...filters.map(
-            (f) => _FilterChip(
-              label: f,
-              isSelected: selected == f,
-              onTap: () => onSelected(f),
-            ),
-          ),
-        ],
+        child: Row(children: chips),
       ),
     );
   }
@@ -269,203 +286,19 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.base, vertical: AppSpacing.xs),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : AppColors.surface,
+          color: isSelected ? AppColors.secondary : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.secondary : AppColors.border,
           ),
         ),
         child: Text(
           label,
           style: AppTextStyles.labelMedium.copyWith(
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? AppColors.textOnSecondary : AppColors.textSecondary,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
-// Top matches horizontal row
-// ──────────────────────────────────────────────
-class _TopMatchesRow extends StatelessWidget {
-  const _TopMatchesRow({
-    required this.cards,
-    required this.onConnect,
-  });
-
-  final List<DiscoverCardModel> cards;
-  final void Function(String id) onConnect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl, AppSpacing.base, AppSpacing.xl, AppSpacing.sm),
-          child: Row(
-            children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              Text('En Uyumlu', style: AppTextStyles.labelLarge),
-              const SizedBox(width: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  '${cards.length}',
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 140,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-            itemCount: cards.length,
-            itemBuilder: (_, i) => _TopMatchCard(
-              card: cards[i],
-              onConnect: () => onConnect(cards[i].id),
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-      ],
-    );
-  }
-}
-
-class _TopMatchCard extends StatelessWidget {
-  const _TopMatchCard({required this.card, required this.onConnect});
-
-  final DiscoverCardModel card;
-  final VoidCallback onConnect;
-
-  @override
-  Widget build(BuildContext context) {
-    final score = card.compatibilityScore;
-    final pct = score != null ? '${(score * 100).toInt()}% uyum' : null;
-
-    return Container(
-      width: 100,
-      margin: const EdgeInsets.only(right: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(
-          vertical: AppSpacing.sm, horizontal: AppSpacing.xs),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.bottomRight,
-            children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: AppColors.surfaceVariant,
-                backgroundImage: card.primaryPhoto != null
-                    ? NetworkImage(card.primaryPhoto!)
-                    : null,
-                child: card.primaryPhoto == null
-                    ? Text(
-                        card.name.isNotEmpty ? card.name[0] : '?',
-                        style: AppTextStyles.headingMedium
-                            .copyWith(color: AppColors.primary),
-                      )
-                    : null,
-              ),
-              if (card.isVerified)
-                Container(
-                  width: 16,
-                  height: 16,
-                  decoration: BoxDecoration(
-                    color: AppColors.info,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                  child:
-                      const Icon(Icons.check, size: 9, color: Colors.white),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            card.name,
-            style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-            overflow: TextOverflow.ellipsis,
-          ),
-          if (pct != null) ...[
-            const SizedBox(height: 2),
-            Text(
-              pct,
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.sm),
-          GestureDetector(
-            onTap: onConnect,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: 5),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.primaryLight],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.person_add_outlined,
-                      size: 11, color: Colors.white),
-                  SizedBox(width: 3),
-                  Text(
-                    'Bağlan',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -479,22 +312,23 @@ class _DiscoverGridCard extends StatelessWidget {
     super.key,
     required this.card,
     required this.activeFilter,
+    required this.isPending,
     required this.onTap,
     required this.onConnect,
-    required this.onPass,
   });
 
   final DiscoverCardModel card;
   final String? activeFilter;
+  final bool isPending;
   final VoidCallback onTap;
   final VoidCallback onConnect;
-  final VoidCallback onPass;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.lg),
           boxShadow: [
@@ -510,26 +344,25 @@ class _DiscoverGridCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // ── Fotoğraf ──
-              _CardPhoto(url: card.primaryPhoto, name: card.name),
-
-              // ── Gradient overlay ──
-              const DecoratedBox(
+              // Use Opacity to dim a bit if pending
+              Opacity(
+                opacity: isPending ? 0.75 : 1.0,
+                child: _CardPhoto(url: card.primaryPhoto, name: card.name),
+              ),
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: [0.30, 0.60, 1.0],
+                    stops: const [0.30, 0.60, 1.0],
                     colors: [
                       Colors.transparent,
-                      Color(0x99000000),
-                      Color(0xE0000000),
+                      Colors.black.withValues(alpha: isPending ? 0.70 : 0.60),
+                      Colors.black.withValues(alpha: isPending ? 0.95 : 0.85),
                     ],
                   ),
                 ),
               ),
-
-              // ── Verified badge ──
               if (card.isVerified)
                 Positioned(
                   top: AppSpacing.sm,
@@ -541,12 +374,10 @@ class _DiscoverGridCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 1.5),
                     ),
-                    child:
-                        const Icon(Icons.check, size: 9, color: Colors.white),
+                    child: const Icon(Icons.check,
+                        size: 9, color: Colors.white),
                   ),
                 ),
-
-              // ── Card content ──
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -591,59 +422,9 @@ class _DiscoverGridCard extends StatelessWidget {
                         ),
                       ],
                       const SizedBox(height: AppSpacing.sm),
-                      // ── Action buttons ──
-                      Row(
-                        children: [
-                          // Pass
-                          GestureDetector(
-                            onTap: onPass,
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.20),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.close_rounded,
-                                  color: Colors.white, size: 15),
-                            ),
-                          ),
-                          const Spacer(),
-                          // Connect
-                          GestureDetector(
-                            onTap: onConnect,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm, vertical: 5),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    AppColors.primary,
-                                    AppColors.primaryLight
-                                  ],
-                                ),
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.full),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.person_add_outlined,
-                                      size: 11, color: Colors.white),
-                                  SizedBox(width: 3),
-                                  Text(
-                                    'Bağlan',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                      _ConnectButton(
+                        isPending: isPending,
+                        onTap: isPending ? null : onConnect,
                       ),
                     ],
                   ),
@@ -657,6 +438,235 @@ class _DiscoverGridCard extends StatelessWidget {
   }
 }
 
+class _ConnectButton extends StatelessWidget {
+  const _ConnectButton({required this.isPending, this.onTap});
+
+  final bool isPending;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        decoration: BoxDecoration(
+          color: isPending
+              ? AppColors.success.withValues(alpha: 0.25)
+              : AppColors.secondary,
+          borderRadius: BorderRadius.circular(AppRadius.base),
+          border: Border.all(
+            color: isPending
+                ? AppColors.success.withValues(alpha: 0.60)
+                : AppColors.secondary,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isPending ? Icons.check_circle_rounded : Icons.person_add_outlined,
+              size: 13,
+              color: isPending ? AppColors.success : AppColors.textOnSecondary,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isPending ? 'İstek Gönderildi' : 'Bağlan',
+              style: TextStyle(
+                color: isPending ? AppColors.success : AppColors.textOnSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Connect confirmation dialog
+// ──────────────────────────────────────────────
+class _ConnectDialog extends StatelessWidget {
+  const _ConnectDialog({
+    required this.card,
+    required this.onConfirm,
+  });
+
+  final DiscoverCardModel card;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl, vertical: AppSpacing.huge),
+      child: Container(
+        padding: const EdgeInsets.all(AppSpacing.xl),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 32,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Avatar
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border:
+                    Border.all(color: AppColors.primary, width: 2.5),
+              ),
+              child: ClipOval(
+                child: card.primaryPhoto != null
+                    ? Image.network(
+                        card.primaryPhoto!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) =>
+                            _DialogAvatarFallback(name: card.name),
+                      )
+                    : _DialogAvatarFallback(name: card.name),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.base),
+            // İsim
+            Text(
+              card.name,
+              style: AppTextStyles.headingMedium,
+              textAlign: TextAlign.center,
+            ),
+            if (card.occupation != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                card.occupation!,
+                style: AppTextStyles.bodySmall,
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.sm),
+            // Açıklama
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.sm),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: Text(
+                '${card.name} adlı kişiye bağlantı isteği gönderilecek. Kabul ederse mesajlaşmaya başlayabilirsiniz.',
+                style: AppTextStyles.bodySmall.copyWith(height: 1.5),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            // Butonlar
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius:
+                            BorderRadius.circular(AppRadius.base),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Vazgeç',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: onConfirm,
+                    child: Container(
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary,
+                        borderRadius: BorderRadius.circular(AppRadius.base),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.secondary.withValues(alpha: 0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.person_add_outlined,
+                                size: 15, color: AppColors.textOnSecondary),
+                            SizedBox(width: 5),
+                            Text(
+                              'Bağlan',
+                              style: TextStyle(
+                                color: AppColors.textOnSecondary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DialogAvatarFallback extends StatelessWidget {
+  const _DialogAvatarFallback({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.primary.withValues(alpha: 0.12),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: AppTextStyles.headingLarge
+              .copyWith(color: AppColors.primary),
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Card photo helper
+// ──────────────────────────────────────────────
 class _CardPhoto extends StatelessWidget {
   const _CardPhoto({required this.url, required this.name});
 
@@ -696,6 +706,9 @@ class _PhotoPlaceholder extends StatelessWidget {
   }
 }
 
+// ──────────────────────────────────────────────
+// Interest chips on card
+// ──────────────────────────────────────────────
 class _CardInterestChips extends StatelessWidget {
   const _CardInterestChips({required this.interests, this.highlight});
 
@@ -704,7 +717,6 @@ class _CardInterestChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Show highlighted interest first, then fill to max 2 total
     final List<String> shown = [];
     if (highlight != null && interests.contains(highlight)) {
       shown.add(highlight!);
@@ -724,14 +736,14 @@ class _CardInterestChips extends StatelessWidget {
               const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
             color: isHighlighted
-                ? AppColors.primary
+                ? AppColors.secondary
                 : Colors.white.withValues(alpha: 0.20),
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
           child: Text(
             i,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: isHighlighted ? AppColors.textOnSecondary : Colors.white,
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
@@ -741,4 +753,5 @@ class _CardInterestChips extends StatelessWidget {
     );
   }
 }
+
 

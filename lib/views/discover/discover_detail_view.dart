@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_shadows.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/discover/discover_card_model.dart';
@@ -12,13 +13,11 @@ class DiscoverDetailView extends StatelessWidget {
     required this.card,
     this.activeFilter,
     required this.onConnect,
-    required this.onPass,
   });
 
   final DiscoverCardModel card;
   final String? activeFilter;
   final VoidCallback onConnect;
-  final VoidCallback onPass;
 
   @override
   Widget build(BuildContext context) {
@@ -28,29 +27,19 @@ class DiscoverDetailView extends StatelessWidget {
         children: [
           CustomScrollView(
             slivers: [
-              _PhotoAppBar(card: card),
+              _DetailPhotoAppBar(card: card),
               SliverToBoxAdapter(
-                child: _ProfileContent(
+                child: _DetailContent(
                     card: card, activeFilter: activeFilter),
               ),
-              // Space for the fixed bottom bar
-              const SliverToBoxAdapter(child: SizedBox(height: 96)),
+              const SliverToBoxAdapter(child: SizedBox(height: 104)),
             ],
           ),
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            child: _BottomActionBar(
-              onPass: () {
-                onPass();
-                Navigator.pop(context);
-              },
-              onConnect: () {
-                onConnect();
-                Navigator.pop(context);
-              },
-            ),
+            child: _ConnectBar(onConnect: onConnect),
           ),
         ],
       ),
@@ -61,15 +50,15 @@ class DiscoverDetailView extends StatelessWidget {
 // ──────────────────────────────────────────────
 // Photo sliver app bar
 // ──────────────────────────────────────────────
-class _PhotoAppBar extends StatelessWidget {
-  const _PhotoAppBar({required this.card});
+class _DetailPhotoAppBar extends StatelessWidget {
+  const _DetailPhotoAppBar({required this.card});
 
   final DiscoverCardModel card;
 
   @override
   Widget build(BuildContext context) {
     return SliverAppBar(
-      expandedHeight: 360,
+      expandedHeight: 380,
       pinned: true,
       backgroundColor: AppColors.background,
       foregroundColor: Colors.white,
@@ -79,25 +68,122 @@ class _PhotoAppBar extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // Photo
             card.primaryPhoto != null
                 ? Image.network(
                     card.primaryPhoto!,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
-                        _DetailPhotoPlaceholder(name: card.name),
+                        _PhotoFallback(name: card.name),
                   )
-                : _DetailPhotoPlaceholder(name: card.name),
-
-            // Bottom gradient
+                : _PhotoFallback(name: card.name),
+            // Gradient
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  stops: [0.45, 1.0],
-                  colors: [Colors.transparent, Color(0xCC000000)],
+                  stops: [0.0, 0.45, 1.0],
+                  colors: [
+                    Colors.transparent,
+                    Colors.transparent,
+                    Color(0xCC000000),
+                  ],
                 ),
+              ),
+            ),
+            // İsim + meslek overlay
+            Positioned(
+              bottom: AppSpacing.xl,
+              left: AppSpacing.xl,
+              right: AppSpacing.xl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          card.nameAndAge,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.3,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      if (card.isVerified)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.sm, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.20),
+                            borderRadius:
+                                BorderRadius.circular(AppRadius.full),
+                            border: Border.all(
+                                color:
+                                    Colors.white.withValues(alpha: 0.50),
+                                width: 1),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified_rounded,
+                                  size: 13, color: Colors.white),
+                              SizedBox(width: 3),
+                              Text(
+                                'Doğrulandı',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                  if (card.occupation != null) ...[
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        const Icon(Icons.work_outline_rounded,
+                            size: 13,
+                            color: Color.fromRGBO(255, 255, 255, 0.75)),
+                        const SizedBox(width: 4),
+                        Text(
+                          card.occupation!,
+                          style: const TextStyle(
+                            color: Color.fromRGBO(255, 255, 255, 0.75),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (card.location != null) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined,
+                            size: 13,
+                            color: Color.fromRGBO(255, 255, 255, 0.55)),
+                        const SizedBox(width: 4),
+                        Text(
+                          card.location!,
+                          style: const TextStyle(
+                            color: Color.fromRGBO(255, 255, 255, 0.55),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
           ],
@@ -107,30 +193,39 @@ class _PhotoAppBar extends StatelessWidget {
   }
 }
 
-class _DetailPhotoPlaceholder extends StatelessWidget {
-  const _DetailPhotoPlaceholder({required this.name});
+class _PhotoFallback extends StatelessWidget {
+  const _PhotoFallback({required this.name});
 
   final String name;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.surfaceVariant,
-      child: Icon(
-        Icons.person,
-        size: 80,
-        color: AppColors.primary.withValues(alpha: 0.3),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.primary, AppColors.primaryDark],
+        ),
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: AppTextStyles.displayLarge.copyWith(
+            color: Colors.white.withValues(alpha: 0.30),
+            fontSize: 96,
+          ),
+        ),
       ),
     );
   }
 }
 
 // ──────────────────────────────────────────────
-// Profile content
+// Content body
 // ──────────────────────────────────────────────
-class _ProfileContent extends StatelessWidget {
-  const _ProfileContent(
-      {required this.card, required this.activeFilter});
+class _DetailContent extends StatelessWidget {
+  const _DetailContent({required this.card, this.activeFilter});
 
   final DiscoverCardModel card;
   final String? activeFilter;
@@ -142,153 +237,93 @@ class _ProfileContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Name + verified badge ──
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Text(
-                  card.nameAndAge,
-                  style: AppTextStyles.headingLarge,
-                ),
-              ),
-              if (card.isVerified)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.info.withValues(alpha: 0.10),
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.full),
-                    border: Border.all(
-                        color: AppColors.info.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.verified_rounded,
-                          size: 13, color: AppColors.info),
-                      const SizedBox(width: 3),
-                      Text(
-                        'Doğrulandı',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.info,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
+          // ── Networking niyeti bilgi şeridi ──
+          if (card.occupation != null || card.distance != null)
+            _InfoRow(card: card),
 
-          // ── Occupation + location ──
-          if (card.occupation != null || card.location != null) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Row(
-              children: [
-                if (card.occupation != null) ...[
-                  const Icon(Icons.work_outline_rounded,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(card.occupation!,
-                      style: AppTextStyles.bodySmall),
-                ],
-                if (card.occupation != null && card.location != null)
-                  Text(' · ',
-                      style: AppTextStyles.bodySmall
-                          .copyWith(color: AppColors.textDisabled)),
-                if (card.location != null) ...[
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Text(card.location!,
-                      style: AppTextStyles.bodySmall),
-                ],
-              ],
-            ),
-          ],
-
-          // ── Compatibility score ──
-          if (card.compatibilityScore != null) ...[
-            const SizedBox(height: AppSpacing.base),
-            _CompatibilityCard(score: card.compatibilityScore!),
-          ],
-
-          // ── Bio ──
+          // ── Hakkında ──
           if (card.bio != null && card.bio!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.xl),
-            Text('Hakkında', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              card.bio!,
-              style: AppTextStyles.bodyMedium.copyWith(height: 1.65),
+            _SectionCard(
+              title: 'Hakkında',
+              icon: Icons.person_outline_rounded,
+              child: Text(
+                card.bio!,
+                style: AppTextStyles.bodyMedium.copyWith(height: 1.65),
+              ),
             ),
           ],
 
-          // ── Interests ──
+          // ── İlgi Alanları ──
           if (card.interests.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              children: [
-                Text('İlgi Alanları', style: AppTextStyles.labelLarge),
-                if (activeFilter != null &&
-                    card.interests.contains(activeFilter)) ...[
-                  const SizedBox(width: AppSpacing.sm),
-                  Container(
+            const SizedBox(height: AppSpacing.sm),
+            _SectionCard(
+              title: 'İlgi Alanları',
+              icon: Icons.interests_outlined,
+              child: Wrap(
+                spacing: AppSpacing.xs,
+                runSpacing: AppSpacing.xs,
+                children: card.interests.map((i) {
+                  final isActive = i == activeFilter;
+                  return Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xs, vertical: 2),
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs),
                     decoration: BoxDecoration(
-                      color:
-                          AppColors.primary.withValues(alpha: 0.10),
+                      color: isActive
+                          ? AppColors.primary
+                          : AppColors.primary.withValues(alpha: 0.08),
                       borderRadius:
                           BorderRadius.circular(AppRadius.full),
+                      border: Border.all(
+                        color: isActive
+                            ? AppColors.primary
+                            : AppColors.primary.withValues(alpha: 0.20),
+                      ),
                     ),
                     child: Text(
-                      'Ortak: $activeFilter',
-                      style: AppTextStyles.caption.copyWith(
+                      i,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color:
+                            isActive ? Colors.white : AppColors.primary,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+
+          // ── Ortak ilgi alanı varsa vurgula ──
+          if (activeFilter != null &&
+              card.interests.contains(activeFilter)) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.base),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.18)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.link_rounded,
+                      size: 16, color: AppColors.primary),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '"$activeFilter" alanında ortak ilginiz var',
+                      style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ],
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: card.interests.map((i) {
-                final isActive = i == activeFilter;
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs),
-                  decoration: BoxDecoration(
-                    color: isActive
-                        ? AppColors.primary
-                        : AppColors.primary.withValues(alpha: 0.08),
-                    borderRadius:
-                        BorderRadius.circular(AppRadius.full),
-                    border: Border.all(
-                      color: isActive
-                          ? AppColors.primary
-                          : AppColors.primary.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Text(
-                    i,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: isActive
-                          ? Colors.white
-                          : AppColors.primary,
-                    ),
-                  ),
-                );
-              }).toList(),
+              ),
             ),
           ],
         ],
@@ -298,48 +333,57 @@ class _ProfileContent extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────
-// Compatibility card
+// Info satırı (meslek + mesafe)
 // ──────────────────────────────────────────────
-class _CompatibilityCard extends StatelessWidget {
-  const _CompatibilityCard({required this.score});
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({required this.card});
 
-  final double score;
+  final DiscoverCardModel card;
 
   @override
   Widget build(BuildContext context) {
-    final pct = (score * 100).toInt();
-    final emoji = pct >= 85 ? '🔥' : pct >= 75 ? '⭐' : '💫';
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.base),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border:
-            Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
       child: Row(
         children: [
-          const Icon(Icons.auto_awesome_rounded,
-              size: 18, color: AppColors.primary),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$pct% uyum',
-                  style: AppTextStyles.labelLarge
-                      .copyWith(color: AppColors.primary),
-                ),
-                Text(
-                  'Ortak ilgi alanlarına göre hesaplandı',
-                  style: AppTextStyles.caption,
-                ),
-              ],
+          if (card.distance != null) ...[
+            _InfoChip(
+              icon: Icons.near_me_outlined,
+              label: '${card.distance!.toStringAsFixed(1)} km',
             ),
+            const SizedBox(width: AppSpacing.xs),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: AppTextStyles.labelMedium
+                .copyWith(color: AppColors.textSecondary),
           ),
-          Text(emoji, style: const TextStyle(fontSize: 20)),
         ],
       ),
     );
@@ -347,13 +391,54 @@ class _CompatibilityCard extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────
-// Fixed bottom action bar
+// Kart bölümü
 // ──────────────────────────────────────────────
-class _BottomActionBar extends StatelessWidget {
-  const _BottomActionBar(
-      {required this.onPass, required this.onConnect});
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
 
-  final VoidCallback onPass;
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.base),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.xs),
+              Text(title, style: AppTextStyles.labelLarge),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Alt Bağlan çubuğu
+// ──────────────────────────────────────────────
+class _ConnectBar extends StatelessWidget {
+  const _ConnectBar({required this.onConnect});
+
   final VoidCallback onConnect;
 
   @override
@@ -365,49 +450,42 @@ class _BottomActionBar extends StatelessWidget {
       decoration: const BoxDecoration(
         color: AppColors.surface,
         border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: onPass,
-              icon: const Icon(Icons.close_rounded, size: 18),
-              label: const Text('Geç'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textSecondary,
-                side: const BorderSide(color: AppColors.border),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.base),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: onConnect,
-              icon: const Icon(Icons.person_add_outlined, size: 18),
-              label: const Text('Bağlan'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, -4),
           ),
         ],
+      ),
+      child: GestureDetector(
+        onTap: onConnect,
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.secondary,
+            borderRadius: BorderRadius.circular(AppRadius.base),
+            boxShadow: AppShadows.secondaryGlow,
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.person_add_outlined,
+                  size: 18, color: AppColors.textOnSecondary),
+              SizedBox(width: AppSpacing.xs),
+              Text(
+                'Bağlantı İsteği Gönder',
+                style: TextStyle(
+                  color: AppColors.textOnSecondary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
-

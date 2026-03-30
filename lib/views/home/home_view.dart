@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_radius.dart';
+import '../../core/theme/app_spacing.dart';
 import '../../viewmodels/home/home_view_model.dart';
 import '../../viewmodels/discover/discover_view_model.dart';
 import '../../viewmodels/matches/matches_view_model.dart';
@@ -78,35 +80,97 @@ class _AppBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
+  static const _labels = ['Yakında', 'Keşfet', 'Bağlantılar', 'Profil'];
+  static const _icons = [
+    Icons.location_on_outlined,
+    Icons.explore_outlined,
+    Icons.people_outline_rounded,
+    Icons.person_outline_rounded,
+  ];
+  static const _activeIcons = [
+    Icons.location_on_rounded,
+    Icons.explore_rounded,
+    Icons.people_rounded,
+    Icons.person_rounded,
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return NavigationBar(
-      selectedIndex: selectedIndex,
-      onDestinationSelected: onTap,
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.borderFocus,
-      destinations: const [
-        NavigationDestination(
-          icon: Icon(Icons.location_on_outlined),
-          selectedIcon: Icon(Icons.location_on),
-          label: 'Yanımdakiler',
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          top: BorderSide(color: AppColors.border, width: 0.5),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.explore_outlined),
-          selectedIcon: Icon(Icons.explore),
-          label: 'Keşfet',
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0F000000),
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: List.generate(4, (i) {
+              final isActive = i == selectedIndex;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => onTap(i),
+                  behavior: HitTestBehavior.opaque,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.base,
+                          vertical: AppSpacing.xs,
+                        ),
+                        decoration: isActive
+                            ? BoxDecoration(
+                                color: AppColors.primary
+                                    .withValues(alpha: 0.10),
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.full),
+                              )
+                            : null,
+                        child: Icon(
+                          isActive ? _activeIcons[i] : _icons[i],
+                          size: 22,
+                          color: isActive
+                              ? AppColors.primary
+                              : AppColors.textDisabled,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: isActive
+                              ? FontWeight.w700
+                              : FontWeight.w400,
+                          color: isActive
+                              ? AppColors.primary
+                              : AppColors.textDisabled,
+                        ),
+                        child: Text(_labels[i]),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ),
         ),
-        NavigationDestination(
-          icon: Icon(Icons.favorite_outline),
-          selectedIcon: Icon(Icons.favorite),
-          label: 'Eşleşmeler',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.person_outline),
-          selectedIcon: Icon(Icons.person),
-          label: 'Profil',
-        ),
-      ],
+      ),
     );
   }
 }

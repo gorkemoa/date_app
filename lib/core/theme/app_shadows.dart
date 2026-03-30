@@ -37,7 +37,15 @@ class AppShadows {
 
   static const List<BoxShadow> primaryGlow = [
     BoxShadow(
-      color: Color(0x406C63FF),
+      color: Color(0x401A1A2E),
+      blurRadius: 16,
+      offset: Offset(0, 4),
+    ),
+  ];
+
+  static const List<BoxShadow> secondaryGlow = [
+    BoxShadow(
+      color: Color(0x66D2FF57),
       blurRadius: 16,
       offset: Offset(0, 4),
     ),

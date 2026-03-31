@@ -520,7 +520,7 @@ class _NearbyBarChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 68,
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.overlayLight : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.md),

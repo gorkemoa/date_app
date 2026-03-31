@@ -45,6 +45,8 @@ dependencies:
   confetti: ^0.7.0
   liquid_glass_renderer: 0.2.0-dev.4
   liquid_swipe: ^3.1.0
+  dynamic_timeline_tile_flutter: ^0.0.4
+  story: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +58,15 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/Adsız tasarım (19).png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/Adsız tasarım (19).png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:story/story.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../models/match/match_model.dart';
 import '../../viewmodels/matches/matches_view_model.dart';
+import '../../viewmodels/notifications/notifications_view_model.dart';
+import '../notifications/notifications_view.dart';
 import '../shared/components/loading_view.dart';
 import '../shared/components/empty_state_view.dart';
 import '../shared/components/error_state_view.dart';
@@ -23,6 +26,7 @@ class _MatchesViewState extends State<MatchesView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MatchesViewModel>().loadMatches();
+      context.read<NotificationsViewModel>().loadNotifications();
     });
   }
 
@@ -128,9 +132,15 @@ class _ConnectionsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = context.watch<NotificationsViewModel>().unreadCount;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.base, AppSpacing.xl, AppSpacing.xs),
+        AppSpacing.xl,
+        AppSpacing.base,
+        AppSpacing.xl,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           Column(
@@ -141,35 +151,115 @@ class _ConnectionsHeader extends StatelessWidget {
                 totalCount > 0
                     ? '$totalCount bağlantı'
                     : 'Başlamak için keşfet',
-                style: AppTextStyles.bodySmall
-                    .copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
           const Spacer(),
-          if (totalCount > 0)
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+          _NotificationButton(unreadCount: unreadCount),
+        ],
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Bildirim Butonu
+// ──────────────────────────────────────────────
+class _NotificationButton extends StatelessWidget {
+  const _NotificationButton({required this.unreadCount});
+
+  final int unreadCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ChangeNotifierProvider.value(
+              value: context.read<NotificationsViewModel>(),
+              child: const NotificationsView(),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: unreadCount > 0 ? AppColors.primary : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          border: Border.all(
+            color: unreadCount > 0 ? AppColors.primary : AppColors.border,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: unreadCount > 0
+                  ? AppColors.primary.withValues(alpha: 0.18)
+                  : Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  Icons.notifications_rounded,
+                  size: 18,
+                  color: unreadCount > 0
+                      ? AppColors.textOnPrimary
+                      : AppColors.textSecondary,
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      width: 14,
+                      height: 14,
+                      decoration: BoxDecoration(
+                        color: AppColors.warning,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Center(
+                        child: Text(
+                          unreadCount > 9 ? '9+' : '$unreadCount',
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 7,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.search_rounded,
-                size: 18,
-                color: AppColors.textSecondary,
+              ],
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'Bildirimler',
+              style: AppTextStyles.labelSmall.copyWith(
+                color: unreadCount > 0
+                    ? AppColors.textOnPrimary
+                    : AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -190,7 +280,11 @@ class _NewConnectionsRow extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-              AppSpacing.xl, AppSpacing.base, AppSpacing.xl, AppSpacing.sm),
+            AppSpacing.xl,
+            AppSpacing.base,
+            AppSpacing.xl,
+            AppSpacing.sm,
+          ),
           child: Row(
             children: [
               Container(
@@ -206,16 +300,19 @@ class _NewConnectionsRow extends StatelessWidget {
               const SizedBox(width: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.xs, vertical: 2),
+                  horizontal: AppSpacing.xs,
+                  vertical: 2,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.success.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   '${connections.length}',
-                  style: AppTextStyles.caption.copyWith(
+                  style: AppTextStyles.labelSmall.copyWith(
                     color: AppColors.success,
                     fontWeight: FontWeight.w700,
+                    fontSize: 10,
                   ),
                 ),
               ),
@@ -223,14 +320,15 @@ class _NewConnectionsRow extends StatelessWidget {
           ),
         ),
         SizedBox(
-          height: 92,
+          height: 100,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             itemCount: connections.length,
-            itemBuilder: (_, i) =>
-                _NewConnectionChip(match: connections[i]),
+            itemBuilder: (_, i) => _NewConnectionStoryTile(
+              match: connections[i],
+              onTap: () => _showStories(context, i),
+            ),
           ),
         ),
         const SizedBox(height: AppSpacing.base),
@@ -238,64 +336,212 @@ class _NewConnectionsRow extends StatelessWidget {
       ],
     );
   }
+
+  void _showStories(BuildContext context, int initialIndex) {
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.black,
+        pageBuilder: (context, _, __) => StoryPageView(
+          itemBuilder: (context, pageIndex, storyIndex) {
+            final match = connections[pageIndex];
+            return Material(
+              color: Colors.black,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: GestureDetector(
+                      onVerticalDragEnd: (details) {
+                        // Dismiss on swipe down or up
+                        if (details.primaryVelocity! > 500 ||
+                            details.primaryVelocity! < -500) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      child: Image.network(
+                        match.userPhoto!,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.8),
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.8),
+                          ],
+                          stops: const [0.0, 0.2, 0.85],
+                        ),
+                      ),
+                    ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.base, AppSpacing.lg, AppSpacing.base, 0),
+                      child: Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            child: CircleAvatar(
+                              backgroundImage: NetworkImage(match.userPhoto!),
+                              radius: 18,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  match.userName,
+                                  style: AppTextStyles.headingSmall.copyWith(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  '2s önce',
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Material(
+                            color: Colors.transparent,
+                            child: IconButton(
+                              icon: const Icon(Icons.close_rounded,
+                                  color: Colors.white, size: 32),
+                              constraints: const BoxConstraints(),
+                              padding: EdgeInsets.zero,
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.base),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.base),
+                                decoration: BoxDecoration(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.full),
+                                  border: Border.all(
+                                      color: Colors.white30, width: 1),
+                                  color: Colors.white12,
+                                ),
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'Mesaj gönder...',
+                                    style: AppTextStyles.bodySmall
+                                        .copyWith(color: Colors.white70),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.md),
+                            const Icon(Icons.favorite_border_rounded,
+                                color: Colors.white, size: 30),
+                            const SizedBox(width: AppSpacing.md),
+                            const Icon(Icons.send_rounded,
+                                color: Colors.white, size: 28),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+          storyLength: (pageIndex) => 1,
+          pageLength: connections.length,
+          initialPage: initialIndex,
+        ),
+      ),
+    );
+  }
 }
 
-class _NewConnectionChip extends StatelessWidget {
-  const _NewConnectionChip({required this.match});
+class _NewConnectionStoryTile extends StatelessWidget {
+  const _NewConnectionStoryTile({required this.match, required this.onTap});
 
   final MatchModel match;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 72,
-      child: Padding(
-        padding: const EdgeInsets.only(right: AppSpacing.base),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 72,
+        margin: const EdgeInsets.only(right: AppSpacing.md),
         child: Column(
           children: [
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.secondary, width: 2),
-                  ),
-                  child: ClipOval(
-                    child: match.userPhoto != null
-                        ? Image.network(
-                            match.userPhoto!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                _AvatarFallback(name: match.userName),
-                          )
-                        : _AvatarFallback(name: match.userName),
+            Container(
+              padding: const EdgeInsets.all(2.5),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.secondary],
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: AppColors.background,
+                  shape: BoxShape.circle,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  child: Image.network(
+                    match.userPhoto!,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
                   ),
                 ),
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                  ),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs),
             Text(
-              match.userName,
+              match.userName ?? '',
               style: AppTextStyles.labelSmall.copyWith(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
-              overflow: TextOverflow.ellipsis,
               maxLines: 1,
-              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -317,14 +563,20 @@ class _SectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.xl, AppSpacing.base, AppSpacing.xl, AppSpacing.xs),
+        AppSpacing.xl,
+        AppSpacing.base,
+        AppSpacing.xl,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           Text(label, style: AppTextStyles.labelLarge),
           const SizedBox(width: AppSpacing.xs),
           Container(
             padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.xs, vertical: 2),
+              horizontal: AppSpacing.xs,
+              vertical: 2,
+            ),
             decoration: BoxDecoration(
               color: AppColors.surfaceVariant,
               borderRadius: BorderRadius.circular(AppRadius.full),
@@ -455,11 +707,12 @@ class _ConversationTile extends StatelessWidget {
                       const SizedBox(width: AppSpacing.xs),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primary,
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.full),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
                           '${match.unreadCount}',
@@ -497,9 +750,7 @@ class _AvatarFallback extends StatelessWidget {
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: AppTextStyles.headingSmall.copyWith(
-            color: AppColors.primary,
-          ),
+          style: AppTextStyles.headingSmall.copyWith(color: AppColors.primary),
         ),
       ),
     );

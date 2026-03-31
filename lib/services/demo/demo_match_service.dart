@@ -36,6 +36,26 @@ class DemoMatchService implements IMatchService {
       isNew: true,
       unreadCount: 0,
     ),
+    MatchModel(
+      id: 'm4',
+      userId: '9',
+      userName: 'Selin',
+      userPhoto: 'https://i.pravatar.cc/200?img=9',
+      lastMessage: null,
+      lastMessageAt: null,
+      isNew: true,
+      unreadCount: 0,
+    ),
+    MatchModel(
+      id: 'm5',
+      userId: '10',
+      userName: 'Elif',
+      userPhoto: 'https://i.pravatar.cc/200?img=10',
+      lastMessage: null,
+      lastMessageAt: null,
+      isNew: true,
+      unreadCount: 0,
+    ),
   ];
 
   @override

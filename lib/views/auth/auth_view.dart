@@ -123,14 +123,42 @@ class _AuthContentState extends State<_AuthContent> {
 
           // ── Content ──
           SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl,
-                  vertical: AppSpacing.massive,
+            child: Stack(
+              children: [
+                // Quick Login Button for testing
+                Positioned(
+                  top: AppSpacing.md,
+                  right: AppSpacing.md,
+                  child: TextButton.icon(
+                    onPressed: () =>
+                        Navigator.pushReplacementNamed(context, AppRoutes.home),
+                    icon: const Icon(Icons.bolt, color: Colors.white70, size: 16),
+                    label: const Text(
+                      'Hızlı Giriş (Test)',
+                      style: TextStyle(color: Colors.white70, fontSize: 13),
+                    ),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                      ),
+                    ),
+                  ),
                 ),
-                child: _SignInContent(vm: vm, onSignIn: _onSignIn),
-              ),
+                Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xl,
+                      vertical: AppSpacing.massive,
+                    ),
+                    child: _SignInContent(vm: vm, onSignIn: _onSignIn),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

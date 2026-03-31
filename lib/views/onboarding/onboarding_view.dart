@@ -40,6 +40,7 @@ class _OnboardingContentState extends State<_OnboardingContent> {
   int _activeIndex = 0;
   List<VideoPlayerController>? _controllers;
   bool _controllersInitializing = false;
+  bool _isAnimating = false;
 
   @override
   void initState() {
@@ -51,6 +52,17 @@ class _OnboardingContentState extends State<_OnboardingContent> {
   void dispose() {
     _controllers?.forEach((c) => c.dispose());
     super.dispose();
+  }
+
+  // Manual loop listener — seeks back before the video actually ends,
+  // avoiding the native loop's brief black/frozen frame.
+  void _onVideoPosition(VideoPlayerController c) {
+    if (!c.value.isInitialized || !c.value.isPlaying) return;
+    final duration = c.value.duration;
+    if (duration == Duration.zero) return;
+    if (c.value.position >= duration - const Duration(milliseconds: 180)) {
+      c.seekTo(Duration.zero);
+    }
   }
 
   Future<void> _initControllersIfNeeded(List<OnboardingSlideModel> slides) async {
@@ -65,8 +77,14 @@ class _OnboardingContentState extends State<_OnboardingContent> {
       controllers.map((c) async {
         try {
           await c.initialize();
-          await c.setLooping(true);
+          // Manual loop to prevent native seek black frame
+          await c.setLooping(false);
           await c.setVolume(0);
+          c.addListener(() => _onVideoPosition(c));
+          // Pre-buffer first frame
+          await c.play();
+          await c.pause();
+          await c.seekTo(Duration.zero);
         } catch (e) {
           debugPrint('Video init error: $e');
         }
@@ -83,17 +101,23 @@ class _OnboardingContentState extends State<_OnboardingContent> {
   }
 
   void _handleNext(BuildContext context, OnboardingViewModel vm) {
+    if (_isAnimating) return;
     if (vm.isLastSlide) {
       _navigateToAuth(context);
     } else {
+      setState(() => _isAnimating = true);
       _liquidController.animateToPage(
         page: _activeIndex + 1,
         duration: 800,
       );
+      Future.delayed(const Duration(milliseconds: 900), () {
+        if (mounted) setState(() => _isAnimating = false);
+      });
     }
   }
 
   void _handleSkip(BuildContext context) {
+    if (_isAnimating) return;
     _navigateToAuth(context);
   }
 
@@ -222,7 +246,10 @@ class _OnboardingContentState extends State<_OnboardingContent> {
             Positioned(
               top: MediaQuery.of(context).padding.top + AppSpacing.lg,
               right: AppSpacing.lg,
-              child: _SkipButton(onTap: () => _handleSkip(context)),
+              child: _SkipButton(
+                onTap: () => _handleSkip(context),
+                enabled: !_isAnimating,
+              ),
             ),
 
           // Bottom content: title + desc + button
@@ -235,6 +262,7 @@ class _OnboardingContentState extends State<_OnboardingContent> {
               vm: vm,
               onNext: () => _handleNext(context, vm),
               currentIndex: _activeIndex,
+              enabled: !_isAnimating,
             ),
           ),
         ],
@@ -256,16 +284,27 @@ class _VideoSlidePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: BoxFit.cover,
-        clipBehavior: Clip.hardEdge,
-        child: SizedBox(
-          width: controller.value.size.width,
-          height: controller.value.size.height,
-          child: VideoPlayer(controller),
-        ),
-      ),
+    return ValueListenableBuilder(
+      valueListenable: controller,
+      builder: (context, VideoPlayerValue value, child) {
+        if (!value.isInitialized) {
+          return const SizedBox.expand(
+            child: DecoratedBox(decoration: BoxDecoration(color: Colors.black)),
+          );
+        }
+
+        return SizedBox.expand(
+          child: FittedBox(
+            fit: BoxFit.cover,
+            clipBehavior: Clip.hardEdge,
+            child: SizedBox(
+              width: value.size.width,
+              height: value.size.height,
+              child: VideoPlayer(controller),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -307,12 +346,14 @@ class _BottomContent extends StatefulWidget {
     required this.vm,
     required this.onNext,
     required this.currentIndex,
+    required this.enabled,
   });
 
   final OnboardingSlideModel slide;
   final OnboardingViewModel vm;
   final VoidCallback onNext;
   final int currentIndex;
+  final bool enabled;
 
   @override
   State<_BottomContent> createState() => _BottomContentState();
@@ -451,17 +492,13 @@ class _BottomContentState extends State<_BottomContent>
                   position: _titleSlide,
                   child: Text(
                     widget.slide.title,
-                    style: AppTextStyles.displayMedium.copyWith(
+                    style: AppTextStyles.displayLarge.copyWith(
                       color: Colors.white,
-                      fontSize: 42,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      height: 1.1,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
 
               // — Layer 3: description —————————————————————————————
               FadeTransition(
@@ -470,10 +507,8 @@ class _BottomContentState extends State<_BottomContent>
                   position: _descSlide,
                   child: Text(
                     widget.slide.description,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: Colors.white.withValues(alpha: 0.68),
-                      height: 1.65,
-                      letterSpacing: 0.1,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
                 ),
@@ -496,6 +531,7 @@ class _BottomContentState extends State<_BottomContent>
                       _NextButton(
                         isLast: widget.vm.isLastSlide,
                         onNext: widget.onNext,
+                        enabled: widget.enabled,
                       ),
                     ],
                   ),
@@ -594,41 +630,50 @@ class _PageDots extends StatelessWidget {
 // Next / CTA button
 // ─────────────────────────────────────────────────────────────────
 class _NextButton extends StatelessWidget {
-  const _NextButton({required this.isLast, required this.onNext});
+  const _NextButton({
+    required this.isLast,
+    required this.onNext,
+    required this.enabled,
+  });
 
   final bool isLast;
   final VoidCallback onNext;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     if (isLast) {
       return GestureDetector(
-        onTap: onNext,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.xl,
-            vertical: AppSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.accent, Color(0xFF8CCF1E)], // Lime Gradient
+        onTap: enabled ? onNext : null,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 200),
+          opacity: enabled ? 1.0 : 0.5,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.xl,
+              vertical: AppSpacing.md,
             ),
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.accent.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.accent, Color(0xFF8CCF1E)],
               ),
-            ],
-          ),
-          child: Text(
-            'Hemen Başlayalım',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textOnAccent,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Text(
+              'Hemen Başlayalım',
+              style: AppTextStyles.labelLarge.copyWith(
+                color: AppColors.textOnAccent,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -636,25 +681,29 @@ class _NextButton extends StatelessWidget {
     }
 
     return GestureDetector(
-      onTap: onNext,
-      child: Container(
-        width: 60,
-        height: 60,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.arrow_forward_rounded,
-          color: Color(0xFF1E1E1E),
-          size: 28,
+      onTap: enabled ? onNext : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: enabled ? 1.0 : 0.5,
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.2),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.arrow_forward_rounded,
+            color: Color(0xFF1E1E1E),
+            size: 28,
+          ),
         ),
       ),
     );
@@ -665,14 +714,15 @@ class _NextButton extends StatelessWidget {
 // Skip button
 // ─────────────────────────────────────────────────────────────────
 class _SkipButton extends StatelessWidget {
-  const _SkipButton({required this.onTap});
+  const _SkipButton({required this.onTap, required this.enabled});
 
   final VoidCallback onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: enabled ? onTap : null,
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.base,

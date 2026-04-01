@@ -11,6 +11,7 @@ import '../notifications/notifications_view.dart';
 import '../shared/components/loading_view.dart';
 import '../shared/components/empty_state_view.dart';
 import '../shared/components/error_state_view.dart';
+
 class MatchesView extends StatefulWidget {
   const MatchesView({super.key});
 
@@ -317,73 +318,12 @@ class _NewConnectionsRow extends StatelessWidget {
             ],
           ),
         ),
-        SizedBox(
-          height: 100,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            itemCount: connections.length,
-            itemBuilder: (_, i) => _NewConnectionTile(
-              match: connections[i],
-              onTap: () {},
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.base),
-        const Divider(height: 1, color: AppColors.border),
+      
       ],
     );
   }
-}
 
-class _NewConnectionTile extends StatelessWidget {
-  const _NewConnectionTile({required this.match, required this.onTap});
-
-  final MatchModel match;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 72,
-        margin: const EdgeInsets.only(right: AppSpacing.md),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary, width: 2),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-                child: Image.network(
-                  match.userPhoto!,
-                  width: 56,
-                  height: 56,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              match.userName,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textPrimary,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+ 
 }
 
 // ──────────────────────────────────────────────

@@ -74,28 +74,6 @@ class _NearbyViewState extends State<NearbyView> with TickerProviderStateMixin {
     }
   }
 
-  void _selectNext() {
-    final vm = context.read<NearbyViewModel>();
-    final users = vm.nearbyUsers;
-    if (users.isEmpty || vm.selectedUser == null) return;
-    final currentIndex = users.indexWhere((u) => u.id == vm.selectedUser!.id);
-    if (currentIndex == -1) return;
-    
-    final nextIndex = (currentIndex + 1) % users.length;
-    _selectAndFlyTo(users[nextIndex]);
-  }
-
-  void _selectPrevious() {
-    final vm = context.read<NearbyViewModel>();
-    final users = vm.nearbyUsers;
-    if (users.isEmpty || vm.selectedUser == null) return;
-    final currentIndex = users.indexWhere((u) => u.id == vm.selectedUser!.id);
-    if (currentIndex == -1) return;
-    
-    final prevIndex = (currentIndex - 1 + users.length) % users.length;
-    _selectAndFlyTo(users[prevIndex]);
-  }
-
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<NearbyViewModel>();
@@ -130,34 +108,24 @@ class _NearbyViewState extends State<NearbyView> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (vm.selectedUser != null)
-                GestureDetector(
-                  onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity == null) return;
-                    if (details.primaryVelocity! > 200) {
-                      _selectPrevious();
-                    } else if (details.primaryVelocity! < -200) {
-                      _selectNext();
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.base,
-                      0,
-                      AppSpacing.base,
-                      AppSpacing.sm,
-                    ),
-                    child: vm.selectedUser!.isPrivate
-                        ? _PrivateProfileCard(
-                            user: vm.selectedUser!,
-                            onClose: () =>
-                                context.read<NearbyViewModel>().selectUser(null),
-                          )
-                        : _PublicProfileCard(
-                            user: vm.selectedUser!,
-                            onClose: () =>
-                                context.read<NearbyViewModel>().selectUser(null),
-                          ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.base,
+                    0,
+                    AppSpacing.base,
+                    AppSpacing.sm,
                   ),
+                  child: vm.selectedUser!.isPrivate
+                      ? _PrivateProfileCard(
+                          user: vm.selectedUser!,
+                          onClose: () =>
+                              context.read<NearbyViewModel>().selectUser(null),
+                        )
+                      : _PublicProfileCard(
+                          user: vm.selectedUser!,
+                          onClose: () =>
+                              context.read<NearbyViewModel>().selectUser(null),
+                        ),
                 ),
               _NearbyBottomBar(vm: vm, onTap: _selectAndFlyTo),
             ],
@@ -300,25 +268,46 @@ class _MapPin extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Instagram-style gradient ring
         Container(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(2.5),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2),
+            gradient: isSelected
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFE040FB),
+                      Color(0xFFFF6B35),
+                      Color(0xFFFFD700),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withValues(alpha: 0.7), color],
+                  ),
             boxShadow: isSelected ? AppShadows.primaryGlow : AppShadows.md,
-            color: Colors.white,
           ),
-          child: ClipOval(
-            child: SizedBox(
-              width: 42,
-              height: 42,
-              child: user.photoUrl != null
-                  ? Image.network(
-                      user.photoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => _fallback(color),
-                    )
-                  : _fallback(color),
+          child: Container(
+            padding: const EdgeInsets.all(1.5),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: SizedBox(
+                width: 42,
+                height: 42,
+                child: user.photoUrl != null
+                    ? Image.network(
+                        user.photoUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => _fallback(color),
+                      )
+                    : _fallback(color),
+              ),
             ),
           ),
         ),
@@ -587,28 +576,45 @@ class _NearbyBarChip extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Public → gradient ring, Private → lock icon
             if (!user.isPrivate)
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
-                  color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                      color: isSelected ? AppColors.primary : AppColors.secondary,
-                      width: 2),
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFE040FB),
+                            Color(0xFFFF6B35),
+                            Color(0xFFFFD700),
+                          ],
+                        )
+                      : const LinearGradient(
+                          colors: [AppColors.accent, AppColors.secondary],
+                        ),
                 ),
-                child: ClipOval(
-                  child: SizedBox(
-                    width: 38,
-                    height: 38,
-                    child: user.photoUrl != null
-                        ? Image.network(
-                            user.photoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) =>
-                                const Icon(Icons.person, size: 20),
-                          )
-                        : const Icon(Icons.person, size: 20),
+                child: Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: user.photoUrl != null
+                          ? Image.network(
+                              user.photoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) =>
+                                  const Icon(Icons.person, size: 20),
+                            )
+                          : const Icon(Icons.person, size: 20),
+                    ),
                   ),
                 ),
               )

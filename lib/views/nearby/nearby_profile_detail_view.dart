@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -16,168 +17,313 @@ class NearbyProfileDetailView extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          _buildAppBar(context),
-          SliverToBoxAdapter(child: _buildBody(context)),
+          _buildSliverAppBar(context),
+          SliverToBoxAdapter(
+            child: _buildBodyContent(context),
+          ),
         ],
       ),
       bottomNavigationBar: _buildBottomActions(context),
+      extendBody: true,
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  Widget _buildSliverAppBar(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
     return SliverAppBar(
-      expandedHeight: 340,
+      expandedHeight: height * 0.55,
       pinned: true,
-      backgroundColor: AppColors.surface,
+      stretch: true,
+      backgroundColor: AppColors.background,
       leading: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(8.0),
         child: GestureDetector(
           onTap: () => Navigator.pop(context),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              shape: BoxShape.circle,
-              boxShadow: AppShadows.sm,
+          child: ClipOval(
+            child: BackdropFilter(
+              filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withValues(alpha: 0.3),
+                ),
+                child: const Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 18,
+                  color: Colors.white,
+                ),
+              ),
             ),
-            child: const Icon(Icons.arrow_back_ios_new,
-                size: 18, color: AppColors.textPrimary),
           ),
         ),
       ),
       flexibleSpace: FlexibleSpaceBar(
-        background: user.photoUrl != null
-            ? Image.network(
+        stretchModes: const [StretchMode.zoomBackground],
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (user.photoUrl != null)
+              Image.network(
                 user.photoUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (c, e, s) => Container(
-                  color: AppColors.surfaceVariant,
-                  child: const Icon(Icons.person, size: 64,
-                      color: AppColors.textDisabled),
-                ),
+                errorBuilder: (c, e, s) => _buildPlaceholder(),
               )
-            : Container(
-                color: AppColors.surfaceVariant,
-                child: const Icon(Icons.person, size: 64,
-                    color: AppColors.textDisabled),
+            else
+              _buildPlaceholder(),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.4),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.8),
+                  ],
+                  stops: const [0.0, 0.2, 0.6, 1.0],
+                ),
               ),
-        // Foto üstüne gradient overlay
-        collapseMode: CollapseMode.parallax,
+            ),
+            Positioned(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              bottom: AppSpacing.lg,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    user.nameAndAge,
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      height: 1.1,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.verified,
+                                  color: AppColors.primary,
+                                  size: 24,
+                                ),
+                              ],
+                            ),
+                            if (user.occupation != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                user.occupation!,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.success.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
+                          border: Border.all(color: AppColors.success.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.success,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Müsait',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (user.venueName != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.location_on,
+                          color: AppColors.primary,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            '${user.venueName!} • ${user.distanceLabel}',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.base),
+  Widget _buildPlaceholder() {
+    return Container(
+      color: AppColors.surfaceVariant,
+      child: const Center(
+        child: Icon(
+          Icons.person,
+          size: 80,
+          color: AppColors.textDisabled,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBodyContent(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xl,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.background,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- İsim / Yaş / Meslek ---
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user.nameAndAge, style: AppTextStyles.headingLarge),
-                    if (user.occupation != null) ...[
-                      const SizedBox(height: 2),
-                      Text(user.occupation!, style: AppTextStyles.bodyLarge),
-                    ],
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: const BoxDecoration(
-                          shape: BoxShape.circle, color: AppColors.success),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('Müsait',
-                        style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.success)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          // --- Mekan & Mesafe ---
-          if (user.venueName != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            _InfoRow(
-              icon: Icons.coffee_outlined,
-              iconColor: AppColors.accent,
-              text: '${user.venueName!}  ·  ${user.distanceLabel}',
-            ),
-          ],
-
-          const SizedBox(height: AppSpacing.lg),
-          const Divider(color: AppColors.border, height: 1),
-          const SizedBox(height: AppSpacing.lg),
-
-          // --- Hakkında ---
           if (user.bio != null && user.bio!.isNotEmpty) ...[
-            const Text('Hakkında', style: AppTextStyles.headingSmall),
-            const SizedBox(height: AppSpacing.sm),
-            Text(user.bio!, style: AppTextStyles.bodyMedium),
-            const SizedBox(height: AppSpacing.lg),
+            const _SectionHeader(title: 'Hakkında'),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              user.bio!,
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
           ],
 
-          // --- Network Hedefi ---
           if (user.meetGoal != null && user.meetGoal!.isNotEmpty) ...[
-            const Text('Network Hedefi', style: AppTextStyles.headingSmall),
-            const SizedBox(height: AppSpacing.sm),
-            _InfoRow(
-              icon: Icons.handshake_outlined,
-              iconColor: AppColors.primary,
-              text: user.meetGoal!,
-              textStyle: AppTextStyles.bodyMedium
-                  .copyWith(color: AppColors.primary),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.05),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.handshake_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ağ Oluşturma Hedefi',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          user.meetGoal!,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: AppSpacing.lg),
+            const SizedBox(height: AppSpacing.xl),
           ],
 
-          // --- Kimlerle tanışmak istiyor ---
           if (user.wantToMeetWith.isNotEmpty) ...[
-            const Text('Tanışmak İstedikleri', style: AppTextStyles.headingSmall),
-            const SizedBox(height: AppSpacing.sm),
+            const _SectionHeader(title: 'Tanışmak İstedikleri'),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children:
-                  user.wantToMeetWith.map((w) => _ProfileChip(label: w)).toList(),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-
-          // --- İlgi Alanları ---
-          if (user.interests.isNotEmpty) ...[
-            const Text('İlgi Alanları', style: AppTextStyles.headingSmall),
-            const SizedBox(height: AppSpacing.sm),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: user.interests
-                  .map((i) => _ProfileChip(label: i, outlined: true))
+              spacing: 8,
+              runSpacing: 8,
+              children: user.wantToMeetWith
+                  .map((w) => _ProfileChip(label: w, isPrimary: true))
                   .toList(),
             ),
-            const SizedBox(height: AppSpacing.xxxl),
+            const SizedBox(height: AppSpacing.xl),
+          ],
+
+          if (user.interests.isNotEmpty) ...[
+            const _SectionHeader(title: 'İlgi Alanları'),
+            const SizedBox(height: AppSpacing.md),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: user.interests
+                  .map((i) => _ProfileChip(label: i, isPrimary: false))
+                  .toList(),
+            ),
+            const SizedBox(height: 120),
           ],
         ],
       ),
@@ -187,123 +333,133 @@ class NearbyProfileDetailView extends StatelessWidget {
   Widget _buildBottomActions(BuildContext context) {
     return Container(
       padding: EdgeInsets.fromLTRB(
-        AppSpacing.base,
-        AppSpacing.sm,
-        AppSpacing.base,
-        AppSpacing.base + MediaQuery.of(context).padding.bottom,
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.md + MediaQuery.of(context).padding.bottom,
       ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: AppShadows.lg,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.close, size: 16),
-              label: const Text('Geç'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.swipePass,
-                side: const BorderSide(color: AppColors.swipePass),
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
+      color: Colors.transparent,
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: AppColors.background.withValues(alpha: 0.75),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _ActionButton(
+                  icon: Icons.close_rounded,
+                  color: AppColors.swipePass,
+                  onTap: () => Navigator.pop(context),
+                  size: 64,
+                  iconSize: 32,
                 ),
-              ),
+                const SizedBox(width: 32),
+                _ActionButton(
+                  icon: Icons.favorite_rounded,
+                  color: AppColors.primary,
+                  onTap: () => Navigator.pop(context),
+                  size: 72,
+                  iconSize: 36,
+                  filled: true,
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Text('👋', style: TextStyle(fontSize: 14)),
-              label: const Text('Merhaba Gönder'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                textStyle: const TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// ──────────────────────────────────────────────
-// Yardımcı widget'lar
-// ──────────────────────────────────────────────
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.iconColor,
-    required this.text,
-    this.textStyle,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String text;
-  final TextStyle? textStyle;
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(icon, size: 15, color: iconColor),
-        ),
-        const SizedBox(width: AppSpacing.xs),
-        Flexible(
-          child: Text(
-            text,
-            style: textStyle ?? AppTextStyles.bodyMedium,
-          ),
-        ),
-      ],
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w700,
+        color: AppColors.textPrimary,
+      ),
     );
   }
 }
 
 class _ProfileChip extends StatelessWidget {
-  const _ProfileChip({required this.label, this.outlined = false});
-
+  const _ProfileChip({required this.label, this.isPrimary = false});
   final String label;
-  final bool outlined;
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: outlined
-            ? Colors.transparent
-            : AppColors.primary.withValues(alpha: 0.08),
+        color: isPrimary ? AppColors.primary : AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(
-          color: outlined
-              ? AppColors.border
-              : AppColors.primary.withValues(alpha: 0.25),
+          color: isPrimary
+              ? AppColors.primary
+              : AppColors.border.withValues(alpha: 0.8),
         ),
+        boxShadow: isPrimary ? AppShadows.primaryGlow : AppShadows.sm,
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: outlined ? AppColors.textSecondary : AppColors.primary,
+          color: isPrimary ? Colors.white : AppColors.textPrimary,
+          fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
+      ),
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.size = 60,
+    this.iconSize = 28,
+    this.filled = false,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final double size;
+  final double iconSize;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: filled ? color : AppColors.surface,
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: filled ? 0.35 : 0.1),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            )
+          ],
+          border: filled
+              ? null
+              : Border.all(color: color.withValues(alpha: 0.2), width: 1.5),
+        ),
+        child: Icon(icon, color: filled ? Colors.white : color, size: iconSize),
       ),
     );
   }

@@ -35,6 +35,20 @@ class DemoAuthService implements IAuthService {
   }
 
   @override
+  Future<BaseResponse<AuthResultModel>> signInWithLinkedIn() async {
+    await Future.delayed(AppConstants.mediumDelay);
+    return BaseResponse.success(
+      data: AuthResultModel(
+        userId: 'demo_linkedin_${Random().nextInt(9999)}',
+        displayName: 'Demo Profesyonel',
+        email: 'demo@linkedin.com',
+        photoUrl: 'https://i.pravatar.cc/200?img=11',
+        provider: AuthProvider.linkedin,
+      ),
+    );
+  }
+
+  @override
   Future<BaseResponse<void>> signOut() async {
     await Future.delayed(AppConstants.shortDelay);
     return BaseResponse.success(data: null);

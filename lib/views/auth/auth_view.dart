@@ -206,14 +206,27 @@ class _SignInContent extends StatelessWidget {
           _ErrorBanner(message: vm.errorMessage ?? ''),
           const SizedBox(height: AppSpacing.base),
         ],
-        _GoogleButton(
+        _LinkedInButton(
           isLoading: vm.isLoading,
-          onTap: () => onSignIn(context, AuthProvider.google),
+          onTap: () => onSignIn(context, AuthProvider.linkedin),
         ),
-        const SizedBox(height: AppSpacing.md),
-        _AppleButton(
-          isLoading: vm.isLoading,
-          onTap: () => onSignIn(context, AuthProvider.apple),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: _GoogleButton(
+                isLoading: vm.isLoading,
+                onTap: () => onSignIn(context, AuthProvider.google),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: _AppleButton(
+                isLoading: vm.isLoading,
+                onTap: () => onSignIn(context, AuthProvider.apple),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -263,32 +276,44 @@ class _SocialButton extends StatelessWidget {
   const _SocialButton({
     required this.onTap,
     required this.backgroundColor,
-    required this.child,
+    required this.icon,
+    required this.label,
     required this.isLoading,
     this.borderColor,
-    this.loaderColor = Colors.white,
+    this.textColor = Colors.white,
+    this.logoBackgroundColor,
   });
 
   final VoidCallback? onTap;
   final Color backgroundColor;
   final Color? borderColor;
-  final Widget child;
+  final Widget icon;
+  final String label;
   final bool isLoading;
-  final Color loaderColor;
+  final Color textColor;
+  final Color? logoBackgroundColor;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        height: 54,
+        duration: const Duration(milliseconds: 200),
+        height: 60,
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: borderColor != null
-              ? Border.all(color: borderColor!)
-              : null,
+              ? Border.all(color: borderColor!, width: 1.2)
+              : Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
         child: isLoading
             ? Center(
@@ -297,11 +322,37 @@ class _SocialButton extends StatelessWidget {
                   height: 22,
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               )
-            : child,
+            : Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: logoBackgroundColor ?? Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    padding: const EdgeInsets.all(10),
+                    child: icon,
+                  ),
+                  Expanded(
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: textColor,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 44), // To balance the logo width for centering
+                ],
+              ),
       ),
     );
   }
@@ -317,28 +368,86 @@ class _GoogleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SocialButton(
       onTap: onTap,
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.white.withValues(alpha: 0.08),
+      borderColor: Colors.white.withValues(alpha: 0.15),
       isLoading: isLoading,
-      loaderColor: AppColors.primary,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            'assets/google.svg',
-            width: 20,
-            height: 20,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          const Text(
-            'Google ile Devam Et',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+      textColor: Colors.white,
+      logoBackgroundColor: Colors.white,
+      icon: SvgPicture.asset(
+        'assets/google.svg',
+        width: 20,
+        height: 20,
+      ),
+      label: 'Google',
+    );
+  }
+}
+
+class _LinkedInButton extends StatelessWidget {
+  const _LinkedInButton({required this.isLoading, required this.onTap});
+
+  final bool isLoading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _SocialButton(
+          onTap: onTap,
+          backgroundColor: const Color(0xFF0077B5).withValues(alpha: 0.9),
+          isLoading: isLoading,
+          textColor: Colors.white,
+          logoBackgroundColor: Colors.white.withValues(alpha: 0.2),
+          icon: SvgPicture.asset(
+            'assets/linkedin.svg',
+            width: 22,
+            height: 22,
+            colorFilter: const ColorFilter.mode(
+              Colors.white,
+              BlendMode.srcIn,
             ),
           ),
-        ],
-      ),
+          label: 'LinkedIn ile Devam Et',
+        ),
+        Positioned(
+          top: -10,
+          left: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.primary, AppColors.primaryLight],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, color: Colors.white, size: 10),
+                SizedBox(width: 4),
+                Text(
+                  'EN POPÜLER SEÇENEK',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -353,32 +462,21 @@ class _AppleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SocialButton(
       onTap: onTap,
-      backgroundColor: const Color(0xFF1C1C1E),
-      borderColor: Colors.white.withValues(alpha: 0.15),
+      backgroundColor: Colors.black.withValues(alpha: 0.4),
+      borderColor: Colors.white.withValues(alpha: 0.2),
       isLoading: isLoading,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          SvgPicture.asset(
-            'assets/apple.svg',
-            width: 20,
-            height: 20,
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          const Text(
-            'Apple ile Devam Et',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
-        ],
+      textColor: Colors.white,
+      logoBackgroundColor: Colors.black.withValues(alpha: 0.5),
+      icon: SvgPicture.asset(
+        'assets/apple.svg',
+        width: 20,
+        height: 20,
+        colorFilter: const ColorFilter.mode(
+          Colors.white,
+          BlendMode.srcIn,
+        ),
       ),
+      label: 'Apple',
     );
   }
 }

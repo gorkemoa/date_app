@@ -10,6 +10,6 @@ enum MatchStatus { pending, accepted, rejected, expired }
 
 enum OnboardingStep { gender, birthdate, photos, interests, location, done }
 
-enum AuthProvider { google, apple }
+enum AuthProvider { google, apple, linkedin }
 
 enum RegistrationStep { basicInfo, professional, interests, complete }

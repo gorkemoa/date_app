@@ -23,9 +23,14 @@ class AuthViewModel extends BaseViewModel {
   Future<bool> signIn(AuthProvider provider) async {
     clearError();
     setLoading();
-    final BaseResponse<AuthResultModel> res = provider == AuthProvider.google
-        ? await _authService.signInWithGoogle()
-        : await _authService.signInWithApple();
+    final BaseResponse<AuthResultModel> res;
+    if (provider == AuthProvider.google) {
+      res = await _authService.signInWithGoogle();
+    } else if (provider == AuthProvider.apple) {
+      res = await _authService.signInWithApple();
+    } else {
+      res = await _authService.signInWithLinkedIn();
+    }
 
     if (res.isSuccess && res.data != null) {
       _authResult = res.data;

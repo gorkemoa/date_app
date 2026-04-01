@@ -9,6 +9,7 @@ import '../../viewmodels/discover/discover_view_model.dart';
 import '../shared/components/empty_state_view.dart';
 import '../shared/components/error_state_view.dart';
 import '../shared/components/loading_view.dart';
+import '../../viewmodels/registration/registration_view_model.dart';
 
 class DiscoverView extends StatefulWidget {
   const DiscoverView({super.key});
@@ -22,7 +23,9 @@ class _DiscoverViewState extends State<DiscoverView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<DiscoverViewModel>().loadCards();
+      final regVm = context.read<RegistrationViewModel>();
+      final interests = regVm.draft.selectedInterests;
+      context.read<DiscoverViewModel>().loadCards(userInterests: interests);
     });
   }
 

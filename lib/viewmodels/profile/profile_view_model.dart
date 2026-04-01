@@ -1,6 +1,7 @@
 import '../../models/profile/profile_model.dart';
 import '../../services/interfaces/i_profile_service.dart';
 import '../base/base_view_model.dart';
+import '../../models/registration/registration_draft_model.dart';
 
 class ProfileViewModel extends BaseViewModel {
   final IProfileService _profileService;
@@ -14,14 +15,25 @@ class ProfileViewModel extends BaseViewModel {
   ProfileModel? get profile => _profile;
   List<String> get availableInterests => _availableInterests;
 
-  Future<void> loadProfile() async {
+  Future<void> loadProfile({RegistrationDraftModel? regDraft}) async {
     setLoading();
     final response = await _profileService.getMyProfile();
     if (!response.isSuccess) {
       setError(response.error?.message ?? response.message);
       return;
     }
+
     _profile = response.data;
+
+    // Apply registration draft overrides if available (Semi-dynamic mock)
+    if (regDraft != null && _profile != null) {
+      _profile = _profile!.copyWith(
+        bio: regDraft.bio.isNotEmpty ? regDraft.bio : _profile!.bio,
+        occupation: regDraft.occupation.isNotEmpty ? regDraft.occupation : _profile!.occupation,
+        interests: regDraft.selectedInterests.isNotEmpty ? regDraft.selectedInterests : _profile!.interests,
+      );
+    }
+    
     setIdle();
   }
 

@@ -10,6 +10,8 @@ import '../../viewmodels/profile/profile_view_model.dart';
 import '../shared/components/loading_view.dart';
 import '../shared/components/error_state_view.dart';
 
+import '../../viewmodels/registration/registration_view_model.dart';
+
 class ProfileView extends StatefulWidget {
   const ProfileView({super.key});
 
@@ -22,7 +24,8 @@ class _ProfileViewState extends State<ProfileView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ProfileViewModel>().loadProfile();
+      final regVm = context.read<RegistrationViewModel>();
+      context.read<ProfileViewModel>().loadProfile(regDraft: regVm.draft);
     });
   }
 
@@ -70,9 +73,7 @@ class _ProfileViewState extends State<ProfileView> {
               child: _InterestsCard(interests: profile.interests),
             ),
           SliverToBoxAdapter(child: _SettingsCard()),
-          const SliverToBoxAdapter(
-            child: SizedBox(height: AppSpacing.xxxl),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
         ],
       ),
     );
@@ -89,178 +90,150 @@ class _ProfileHeroHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 320,
-      child: Stack(
-        fit: StackFit.expand,
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+      ),
+      child: Column(
         children: [
-          // Fotoğraf
-          profile.primaryPhoto != null
-              ? Image.network(
-                  profile.primaryPhoto!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) =>
-                      _HeroPlaceholder(name: profile.name),
-                )
-              : _HeroPlaceholder(name: profile.name),
-          // Gradient overlay
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.50, 1.0],
-                colors: [
-                  Colors.transparent,
-                  Color(0x44000000),
-                  Color(0xE0000000),
-                ],
-              ),
-            ),
-          ),
-          // Üst bar
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.base,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _GlassIconButton(icon: Icons.arrow_back_ios_new_rounded),
-                    _GlassIconButton(icon: Icons.settings_outlined),
-                  ],
+          // Header Background / Cover
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                height: 140,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.secondary, AppColors.secondaryLight],
+                  ),
                 ),
               ),
-            ),
+              // Profile Action Bar Overlay
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 24),
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // Avatar
+              Positioned(
+                bottom: -50,
+                left: AppSpacing.xl,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      image: profile.primaryPhoto != null
+                          ? DecorationImage(
+                              image: NetworkImage(profile.primaryPhoto!),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                      color: AppColors.surfaceVariant,
+                    ),
+                    child: profile.primaryPhoto == null
+                        ? Center(
+                            child: Text(
+                              profile.name[0].toUpperCase(),
+                              style: AppTextStyles.displayLarge.copyWith(color: AppColors.textDisabled, fontSize: 40),
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+            ],
           ),
-          // Alt bilgi
-          Positioned(
-            bottom: AppSpacing.base,
-            left: AppSpacing.base,
-            right: AppSpacing.base,
+          
+          const SizedBox(height: 60),
+
+          // Info Area
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      '${profile.name}, ${profile.age}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                        height: 1.2,
+                      profile.name,
+                      style: AppTextStyles.displayMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     if (profile.isVerified) ...[
-                      const SizedBox(width: AppSpacing.xs),
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: AppColors.info,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          size: 10,
-                          color: Colors.white,
-                        ),
-                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.verified_rounded, color: AppColors.primary, size: 20),
                     ],
                   ],
                 ),
                 if (profile.occupation != null) ...[
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     profile.occupation!,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: 14,
-                      height: 1.4,
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
                   ),
                 ],
-                if (profile.location != null) ...[
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_outlined,
-                        size: 13,
-                        color: Colors.white.withValues(alpha: 0.60),
-                      ),
-                      const SizedBox(width: 3),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (profile.location != null) ...[
+                      const Icon(Icons.location_on_rounded, size: 14, color: AppColors.textDisabled),
+                      const SizedBox(width: 4),
                       Text(
                         profile.location!,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.60),
-                          fontSize: 12,
-                        ),
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
                       ),
+                      const SizedBox(width: 16),
                     ],
-                  ),
-                ],
+                    const Icon(Icons.business_center_rounded, size: 14, color: AppColors.textDisabled),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Profesyonel Ağ',
+                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
               ],
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _GlassIconButton extends StatelessWidget {
-  const _GlassIconButton({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.28),
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: Colors.white, size: 18),
-    );
-  }
-}
-
-class _HeroPlaceholder extends StatelessWidget {
-  const _HeroPlaceholder({required this.name});
-
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDark],
-        ),
-      ),
-      child: Center(
-        child: Text(
-          name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: AppTextStyles.displayLarge.copyWith(
-            color: Colors.white.withValues(alpha: 0.40),
-            fontSize: 88,
-          ),
-        ),
       ),
     );
   }
@@ -295,7 +268,11 @@ class _ProfileActionBar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.edit_outlined, size: 16, color: AppColors.textOnSecondary),
+                    Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: AppColors.textOnSecondary,
+                    ),
                     SizedBox(width: AppSpacing.xs),
                     Text(
                       'Profili Düzenle',
@@ -344,14 +321,17 @@ class _CompletionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.xs, AppSpacing.base, AppSpacing.xs),
+        AppSpacing.base,
+        AppSpacing.xs,
+        AppSpacing.base,
+        AppSpacing.xs,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.base),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-              color: AppColors.accent.withValues(alpha: 0.30)),
+          border: Border.all(color: AppColors.accent.withValues(alpha: 0.30)),
           boxShadow: AppShadows.sm,
         ),
         child: Column(
@@ -359,13 +339,13 @@ class _CompletionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.rocket_launch_outlined,
-                    size: 16, color: AppColors.primary),
-                const SizedBox(width: AppSpacing.xs),
-                Text(
-                  'Profil Gücü',
-                  style: AppTextStyles.labelLarge,
+                const Icon(
+                  Icons.rocket_launch_outlined,
+                  size: 16,
+                  color: AppColors.primary,
                 ),
+                const SizedBox(width: AppSpacing.xs),
+                Text('Profil Gücü', style: AppTextStyles.labelLarge),
                 const Spacer(),
                 Text(
                   '%$percent',
@@ -383,7 +363,8 @@ class _CompletionCard extends StatelessWidget {
                 value: percent / 100,
                 backgroundColor: AppColors.surfaceVariant,
                 valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primary),
+                  AppColors.primary,
+                ),
                 minHeight: 6,
               ),
             ),
@@ -411,7 +392,11 @@ class _BioCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.xs, AppSpacing.base, AppSpacing.xs),
+        AppSpacing.base,
+        AppSpacing.xs,
+        AppSpacing.base,
+        AppSpacing.xs,
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.base),
@@ -446,7 +431,11 @@ class _InterestsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.xs, AppSpacing.base, AppSpacing.xs),
+        AppSpacing.base,
+        AppSpacing.xs,
+        AppSpacing.base,
+        AppSpacing.xs,
+      ),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.base),
@@ -504,7 +493,11 @@ class _SettingsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.xs, AppSpacing.base, AppSpacing.xs),
+        AppSpacing.base,
+        AppSpacing.xs,
+        AppSpacing.base,
+        AppSpacing.xs,
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -518,20 +511,11 @@ class _SettingsCard extends StatelessWidget {
               icon: Icons.notifications_outlined,
               label: 'Bildirimler',
             ),
-            const Divider(
-                height: 1, color: AppColors.border, indent: 56),
-            _SettingsTile(
-              icon: Icons.lock_outline_rounded,
-              label: 'Gizlilik',
-            ),
-            const Divider(
-                height: 1, color: AppColors.border, indent: 56),
-            _SettingsTile(
-              icon: Icons.help_outline_rounded,
-              label: 'Yardım',
-            ),
-            const Divider(
-                height: 1, color: AppColors.border, indent: 56),
+            const Divider(height: 1, color: AppColors.border, indent: 56),
+            _SettingsTile(icon: Icons.lock_outline_rounded, label: 'Gizlilik'),
+            const Divider(height: 1, color: AppColors.border, indent: 56),
+            _SettingsTile(icon: Icons.help_outline_rounded, label: 'Yardım'),
+            const Divider(height: 1, color: AppColors.border, indent: 56),
             _SettingsTile(
               icon: Icons.logout_rounded,
               label: 'Çıkış Yap',
@@ -545,11 +529,7 @@ class _SettingsCard extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.label,
-    this.color,
-  });
+  const _SettingsTile({required this.icon, required this.label, this.color});
 
   final IconData icon;
   final String label;

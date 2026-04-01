@@ -18,10 +18,7 @@ class RegistrationView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => RegistrationViewModel(),
-      child: const _RegistrationContent(),
-    );
+    return const _RegistrationContent();
   }
 }
 

@@ -10,6 +10,7 @@ import '../shared/components/empty_state_view.dart';
 import '../shared/components/error_state_view.dart';
 import '../shared/components/loading_view.dart';
 import '../../viewmodels/registration/registration_view_model.dart';
+import '../../models/discover/discover_card_model.dart';
 
 class DiscoverView extends StatefulWidget {
   const DiscoverView({super.key});
@@ -95,25 +96,194 @@ class _DiscoverViewState extends State<DiscoverView> {
       slivers: [
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.base,
+            AppSpacing.xl,
             AppSpacing.xs,
-            AppSpacing.base,
+            AppSpacing.xl,
             AppSpacing.xxxl,
           ),
           sliver: SliverGrid.builder(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: AppSpacing.sm,
-              mainAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 0.70,
+              crossAxisSpacing: AppSpacing.sm + 2,
+              mainAxisSpacing: AppSpacing.sm + 2,
+              childAspectRatio: 0.68,
             ),
             itemCount: filtered.length,
             itemBuilder: (_, i) {
-              return null;
+              final card = filtered[i];
+              return _DiscoverCandidateCard(
+                card: card,
+                isPending: vm.isPendingRequest(card.id),
+                onConnect: () => vm.connect(card.id),
+              );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Professional Candidate Card
+// ──────────────────────────────────────────────
+class _DiscoverCandidateCard extends StatelessWidget {
+  const _DiscoverCandidateCard({
+    required this.card,
+    required this.isPending,
+    required this.onConnect,
+  });
+
+  final DiscoverCardModel card;
+  final bool isPending;
+  final VoidCallback onConnect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 1. Full Cover Professional Image
+          card.primaryPhoto != null
+              ? Image.network(card.primaryPhoto!, fit: BoxFit.cover)
+              : Container(
+                  color: AppColors.surfaceVariant,
+                  child: Center(
+                    child: Text(
+                      card.name[0].toUpperCase(),
+                      style: AppTextStyles.displayLarge.copyWith(color: AppColors.textDisabled, fontSize: 64),
+                    ),
+                  ),
+                ),
+
+          // 2. Elite Gradient Overlay (Bottom only, for text)
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.transparent, Colors.black87],
+                stops: [0.0, 0.4, 1.0],
+              ),
+            ),
+          ),
+
+          // 3. Premium Info Overlay (Bottom)
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  card.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              if (card.isVerified) ...[
+                                const SizedBox(width: 4),
+                                const Icon(Icons.verified_rounded, color: AppColors.primary, size: 14),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            card.occupation ?? 'Profesyonel',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Glass Connect Button
+                    GestureDetector(
+                      onTap: isPending ? null : onConnect,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isPending ? Colors.white24 : Colors.white12,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24, width: 0.5),
+                        ),
+                        child: Icon(
+                          isPending ? Icons.hourglass_empty_rounded : Icons.person_add_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // 4. Subtle Compatibility Dot (No bulky badge)
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'UYUMLU',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -70,7 +70,7 @@ class _ProfileViewState extends State<ProfileView> {
             SliverToBoxAdapter(child: _BioCard(bio: profile.bio!)),
           if (profile.interests.isNotEmpty)
             SliverToBoxAdapter(
-              child: _InterestsCard(interests: profile.interests),
+              child: _ExpertiseCard(interests: profile.interests),
             ),
           SliverToBoxAdapter(child: _SettingsCard()),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
@@ -120,16 +120,27 @@ class _ProfileHeroHeader extends StatelessWidget {
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: () => (),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 24),
+                          icon: const Icon(
+                            Icons.more_horiz_rounded,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           onPressed: () {},
                         ),
                       ],
@@ -164,7 +175,10 @@ class _ProfileHeroHeader extends StatelessWidget {
                         ? Center(
                             child: Text(
                               profile.name[0].toUpperCase(),
-                              style: AppTextStyles.displayLarge.copyWith(color: AppColors.textDisabled, fontSize: 40),
+                              style: AppTextStyles.displayLarge.copyWith(
+                                color: AppColors.textDisabled,
+                                fontSize: 40,
+                              ),
                             ),
                           )
                         : null,
@@ -173,7 +187,7 @@ class _ProfileHeroHeader extends StatelessWidget {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 60),
 
           // Info Area
@@ -194,7 +208,11 @@ class _ProfileHeroHeader extends StatelessWidget {
                     ),
                     if (profile.isVerified) ...[
                       const SizedBox(width: 8),
-                      const Icon(Icons.verified_rounded, color: AppColors.primary, size: 20),
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
                     ],
                   ],
                 ),
@@ -213,19 +231,31 @@ class _ProfileHeroHeader extends StatelessWidget {
                 Row(
                   children: [
                     if (profile.location != null) ...[
-                      const Icon(Icons.location_on_rounded, size: 14, color: AppColors.textDisabled),
+                      const Icon(
+                        Icons.location_on_rounded,
+                        size: 14,
+                        color: AppColors.textDisabled,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         profile.location!,
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                       const SizedBox(width: 16),
                     ],
-                    const Icon(Icons.business_center_rounded, size: 14, color: AppColors.textDisabled),
+                    const Icon(
+                      Icons.business_center_rounded,
+                      size: 14,
+                      color: AppColors.textDisabled,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Profesyonel Ağ',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -331,8 +361,14 @@ class _CompletionCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.accent.withValues(alpha: 0.30)),
-          boxShadow: AppShadows.sm,
+          border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -340,38 +376,47 @@ class _CompletionCard extends StatelessWidget {
             Row(
               children: [
                 const Icon(
-                  Icons.rocket_launch_outlined,
-                  size: 16,
-                  color: AppColors.primary,
+                  Icons.insights_rounded,
+                  size: 18,
+                  color: AppColors.secondary,
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Text('Profil Gücü', style: AppTextStyles.labelLarge),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Ağ Bağlantı Gücü',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 const Spacer(),
                 Text(
                   '%$percent',
                   style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
+                    color: AppColors.secondary,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.md),
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
               child: LinearProgressIndicator(
                 value: percent / 100,
-                backgroundColor: AppColors.surfaceVariant,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.primary,
+                backgroundColor: AppColors.surfaceVariant.withValues(
+                  alpha: 0.5,
                 ),
-                minHeight: 6,
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.secondary,
+                ),
+                minHeight: 8,
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.sm),
             Text(
-              'Profilini tamamlayarak daha fazla bağlantı kur',
-              style: AppTextStyles.caption,
+              'Profilini zenginleştirerek daha nitelikli bağlantılar kur.',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -420,10 +465,10 @@ class _BioCard extends StatelessWidget {
 }
 
 // ──────────────────────────────────────────────
-// İlgi alanları kartı
+// Uzmanlık ve Yetkinlikler kartı
 // ──────────────────────────────────────────────
-class _InterestsCard extends StatelessWidget {
-  const _InterestsCard({required this.interests});
+class _ExpertiseCard extends StatelessWidget {
+  const _ExpertiseCard({required this.interests});
 
   final List<String> interests;
 
@@ -443,34 +488,52 @@ class _InterestsCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.sm,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('İlgi Alanları', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                const Icon(
+                  Icons.star_rounded,
+                  size: 18,
+                  color: AppColors.secondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Uzmanlık ve Yetkinlikler',
+                  style: AppTextStyles.labelLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
             Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
+              spacing: 8,
+              runSpacing: 8,
               children: interests.map((interest) {
                 return Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm + 2,
-                    vertical: AppSpacing.xs,
+                    horizontal: 14,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    border: Border.all(
-                      color: AppColors.accent.withValues(alpha: 0.35),
-                    ),
+                    color: AppColors.surfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
                     interest,
                     style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.accentDark,
-                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
                     ),
                   ),
                 );

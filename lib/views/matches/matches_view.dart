@@ -11,8 +11,6 @@ import '../notifications/notifications_view.dart';
 import '../shared/components/loading_view.dart';
 import '../shared/components/empty_state_view.dart';
 import '../shared/components/error_state_view.dart';
-import '../shared/components/story_viewer.dart';
-
 class MatchesView extends StatefulWidget {
   const MatchesView({super.key});
 
@@ -325,9 +323,9 @@ class _NewConnectionsRow extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             itemCount: connections.length,
-            itemBuilder: (_, i) => _NewConnectionStoryTile(
+            itemBuilder: (_, i) => _NewConnectionTile(
               match: connections[i],
-              onTap: () => _showStories(context, i),
+              onTap: () {},
             ),
           ),
         ),
@@ -336,21 +334,10 @@ class _NewConnectionsRow extends StatelessWidget {
       ],
     );
   }
-
-  void _showStories(BuildContext context, int initialIndex) {
-    final items = connections
-        .map((m) => StoryItem(
-              name: m.userName,
-              photoUrl: m.userPhoto,
-              timeLabel: 'Yeni eşleşme',
-            ))
-        .toList();
-    showStoryViewer(context, items, initialIndex);
-  }
 }
 
-class _NewConnectionStoryTile extends StatelessWidget {
-  const _NewConnectionStoryTile({required this.match, required this.onTap});
+class _NewConnectionTile extends StatelessWidget {
+  const _NewConnectionTile({required this.match, required this.onTap});
 
   final MatchModel match;
   final VoidCallback onTap;
@@ -365,33 +352,19 @@ class _NewConnectionStoryTile extends StatelessWidget {
         child: Column(
           children: [
             Container(
-              padding: const EdgeInsets.all(2.5),
-              decoration: const BoxDecoration(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                color: AppColors.background,
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFE040FB),
-                    Color(0xFFFF6B35),
-                    Color(0xFFFFD700),
-                  ],
-                ),
+                border: Border.all(color: AppColors.primary, width: 2),
               ),
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: AppColors.background,
-                  shape: BoxShape.circle,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                  child: Image.network(
-                    match.userPhoto!,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                  ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                child: Image.network(
+                  match.userPhoto!,
+                  width: 56,
+                  height: 56,
+                  fit: BoxFit.cover,
                 ),
               ),
             ),

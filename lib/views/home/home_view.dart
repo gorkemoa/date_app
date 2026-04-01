@@ -42,7 +42,8 @@ class HomeView extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => NotificationsViewModel(
-              notificationService: DemoNotificationService()),
+            notificationService: DemoNotificationService(),
+          ),
         ),
       ],
       child: const _HomeContent(),
@@ -94,12 +95,6 @@ class _AppBottomNavBar extends StatelessWidget {
   ];
 
   // Per-tab active colors: Yakında=coral, Keşfet=mavi, Bağlantılar=lime, Profil=coral
-  static const _tabColors = [
-    AppColors.primary,
-    AppColors.secondary,
-    AppColors.accent,
-    AppColors.primary,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +120,7 @@ class _AppBottomNavBar extends StatelessWidget {
           child: Row(
             children: List.generate(4, (i) {
               final isActive = i == selectedIndex;
-              final tabColor = _tabColors[i];
+              final tabColor = AppColors.primary;
               return Expanded(
                 child: GestureDetector(
                   onTap: () => onTap(i),
@@ -141,7 +136,7 @@ class _AppBottomNavBar extends StatelessWidget {
                         ),
                         decoration: isActive
                             ? BoxDecoration(
-                                color: tabColor.withValues(alpha: 0.12),
+                                color: tabColor,
                                 borderRadius: BorderRadius.circular(
                                   AppRadius.full,
                                 ),
@@ -150,7 +145,9 @@ class _AppBottomNavBar extends StatelessWidget {
                         child: Icon(
                           isActive ? _activeIcons[i] : _icons[i],
                           size: 22,
-                          color: isActive ? tabColor : AppColors.textDisabled,
+                          color: isActive
+                              ? AppColors.background
+                              : AppColors.textDisabled,
                         ),
                       ),
                       const SizedBox(height: 2),

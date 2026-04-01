@@ -46,7 +46,6 @@ dependencies:
   liquid_glass_renderer: 0.2.0-dev.4
   liquid_swipe: ^3.1.0
   dynamic_timeline_tile_flutter: ^0.0.4
-  story: ^1.1.0
 
 dev_dependencies:
   flutter_test:

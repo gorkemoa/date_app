@@ -12,7 +12,6 @@ import '../../models/nearby/nearby_user_model.dart';
 import '../../viewmodels/nearby/nearby_view_model.dart';
 import '../shared/components/error_state_view.dart';
 import '../shared/components/loading_view.dart';
-import '../shared/components/story_viewer.dart';
 import 'nearby_profile_detail_view.dart';
 
 class NearbyView extends StatefulWidget {
@@ -22,8 +21,7 @@ class NearbyView extends StatefulWidget {
   State<NearbyView> createState() => _NearbyViewState();
 }
 
-class _NearbyViewState extends State<NearbyView>
-    with TickerProviderStateMixin {
+class _NearbyViewState extends State<NearbyView> with TickerProviderStateMixin {
   final MapController _mapController = MapController();
   late final AnimationController _flyAnim;
 
@@ -73,32 +71,7 @@ class _NearbyViewState extends State<NearbyView>
       _zoomFrom = _mapController.camera.zoom;
       _zoomTo = 16.5;
       _flyAnim.forward(from: 0);
-
-      // Public kullanıcı → story aç
-      if (!user.isPrivate) {
-        _showStory(user);
-      }
     }
-  }
-
-  void _showStory(NearbyUserModel user) {
-    final allPublic = context
-        .read<NearbyViewModel>()
-        .nearbyUsers
-        .where((u) => !u.isPrivate && u.photoUrl != null)
-        .toList();
-    final index = allPublic.indexWhere((u) => u.id == user.id);
-    if (index < 0) return;
-    final items = allPublic
-        .map((u) => StoryItem(
-              name: '${u.name}, ${u.age}',
-              photoUrl: u.photoUrl,
-              timeLabel: u.venueName != null
-                  ? '${u.venueName}  ·  ${u.distanceLabel}'
-                  : u.distanceLabel,
-            ))
-        .toList();
-    showStoryViewer(context, items, index);
   }
 
   @override
@@ -137,7 +110,11 @@ class _NearbyViewState extends State<NearbyView>
               if (vm.selectedUser != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.base, 0, AppSpacing.base, AppSpacing.sm),
+                    AppSpacing.base,
+                    0,
+                    AppSpacing.base,
+                    AppSpacing.sm,
+                  ),
                   child: vm.selectedUser!.isPrivate
                       ? _PrivateProfileCard(
                           user: vm.selectedUser!,
@@ -185,9 +162,7 @@ class _MapLayer extends StatelessWidget {
         initialZoom: 15.5,
         maxZoom: 18,
         minZoom: 13,
-        interactionOptions: InteractionOptions(
-          flags: InteractiveFlag.all,
-        ),
+        interactionOptions: InteractionOptions(flags: InteractiveFlag.all),
       ),
       children: [
         TileLayer(
@@ -197,18 +172,20 @@ class _MapLayer extends StatelessWidget {
         ),
         MarkerLayer(
           markers: vm.allMarkers
-              .map((u) => Marker(
-                    point: LatLng(u.latitude, u.longitude),
-                    width: u.isMe ? 68 : 72,
-                    height: u.isMe ? 68 : 82,
-                    child: GestureDetector(
-                      onTap: u.isMe ? null : () => onPinTap(u),
-                      child: _MapPin(
-                        user: u,
-                        isSelected: vm.selectedUser?.id == u.id,
-                      ),
+              .map(
+                (u) => Marker(
+                  point: LatLng(u.latitude, u.longitude),
+                  width: u.isMe ? 68 : 72,
+                  height: u.isMe ? 68 : 82,
+                  child: GestureDetector(
+                    onTap: u.isMe ? null : () => onPinTap(u),
+                    child: _MapPin(
+                      user: u,
+                      isSelected: vm.selectedUser?.id == u.id,
                     ),
-                  ))
+                  ),
+                ),
+              )
               .toList(),
         ),
       ],
@@ -246,8 +223,11 @@ class _MapPin extends StatelessWidget {
           ),
           child: ClipOval(
             child: user.photoUrl != null
-                ? Image.network(user.photoUrl!, fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) => _fallback(AppColors.primary))
+                ? Image.network(
+                    user.photoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (c, e, s) => _fallback(AppColors.primary),
+                  )
                 : _fallback(AppColors.primary),
           ),
         ),
@@ -288,43 +268,25 @@ class _MapPin extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Instagram-style gradient ring
         Container(
-          padding: const EdgeInsets.all(2.5),
+          padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: isSelected
-                ? const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFE040FB),
-                      Color(0xFFFF6B35),
-                      Color(0xFFFFD700),
-                    ],
-                  )
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [color.withValues(alpha: 0.7), color],
-                  ),
+            border: Border.all(color: color, width: 2),
             boxShadow: isSelected ? AppShadows.primaryGlow : AppShadows.md,
+            color: Colors.white,
           ),
-          child: Container(
-            padding: const EdgeInsets.all(1.5),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: ClipOval(
-              child: SizedBox(
-                width: 42,
-                height: 42,
-                child: user.photoUrl != null
-                    ? Image.network(user.photoUrl!, fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => _fallback(color))
-                    : _fallback(color),
-              ),
+          child: ClipOval(
+            child: SizedBox(
+              width: 42,
+              height: 42,
+              child: user.photoUrl != null
+                  ? Image.network(
+                      user.photoUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => _fallback(color),
+                    )
+                  : _fallback(color),
             ),
           ),
         ),
@@ -344,9 +306,10 @@ class _MapPin extends StatelessWidget {
             child: Text(
               user.venueName!,
               style: const TextStyle(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary),
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -421,7 +384,9 @@ class _NearbyHeader extends StatelessWidget {
                 const SizedBox(width: AppSpacing.xs),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 2),
+                    horizontal: AppSpacing.sm,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(AppRadius.full),
@@ -429,16 +394,19 @@ class _NearbyHeader extends StatelessWidget {
                   child: const Text(
                     'Alsancak • İzmir',
                     style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textOnSecondary,
-                        fontWeight: FontWeight.w600),
+                      fontSize: 11,
+                      color: AppColors.textOnSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const Spacer(),
                 if (!vm.isLoading && vm.nearbyUsers.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm, vertical: 2),
+                      horizontal: AppSpacing.sm,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.success.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(AppRadius.full),
@@ -508,12 +476,16 @@ class _NearbyBottomBar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base,
+                ),
                 child: Row(
                   children: [
-                    const Icon(Icons.radio_button_checked,
-                        size: 11, color: AppColors.secondary),
+                    const Icon(
+                      Icons.radio_button_checked,
+                      size: 11,
+                      color: AppColors.secondary,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Çevrende ${vm.nearbyUsers.length} kişi müsait',
@@ -528,7 +500,8 @@ class _NearbyBottomBar extends StatelessWidget {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.base),
+                    horizontal: AppSpacing.base,
+                  ),
                   itemCount: vm.nearbyUsers.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: AppSpacing.sm),
@@ -582,45 +555,28 @@ class _NearbyBarChip extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Public → gradient ring, Private → lock icon
             if (!user.isPrivate)
               Container(
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
+                  color: Colors.white,
                   shape: BoxShape.circle,
-                  gradient: isSelected
-                      ? const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            Color(0xFFE040FB),
-                            Color(0xFFFF6B35),
-                            Color(0xFFFFD700),
-                          ],
-                        )
-                      : const LinearGradient(
-                          colors: [AppColors.accent, AppColors.secondary],
-                        ),
+                  border: Border.all(
+                      color: isSelected ? AppColors.primary : AppColors.secondary,
+                      width: 2),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.all(1.5),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: user.photoUrl != null
-                          ? Image.network(
-                              user.photoUrl!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (c, e, s) =>
-                                  const Icon(Icons.person, size: 20),
-                            )
-                          : const Icon(Icons.person, size: 20),
-                    ),
+                child: ClipOval(
+                  child: SizedBox(
+                    width: 38,
+                    height: 38,
+                    child: user.photoUrl != null
+                        ? Image.network(
+                            user.photoUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) =>
+                                const Icon(Icons.person, size: 20),
+                          )
+                        : const Icon(Icons.person, size: 20),
                   ),
                 ),
               )
@@ -638,8 +594,11 @@ class _NearbyBarChip extends StatelessWidget {
                   boxShadow: AppShadows.sm,
                 ),
                 child: const ClipOval(
-                  child: Icon(Icons.lock_outline,
-                      size: 18, color: AppColors.textDisabled),
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: AppColors.textDisabled,
+                  ),
                 ),
               ),
             const SizedBox(height: 3),
@@ -648,15 +607,16 @@ class _NearbyBarChip extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color:
-                    isSelected ? AppColors.primary : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
             Text(
               user.distanceLabel,
               style: const TextStyle(
-                  fontSize: 10, color: AppColors.textSecondary),
+                fontSize: 10,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -700,14 +660,18 @@ class _PublicProfileCard extends StatelessWidget {
                 ),
                 child: ClipOval(
                   child: user.photoUrl != null
-                      ? Image.network(user.photoUrl!, fit: BoxFit.cover,
+                      ? Image.network(
+                          user.photoUrl!,
+                          fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => Container(
-                                color: AppColors.surfaceVariant,
-                                child: const Icon(Icons.person),
-                              ))
+                            color: AppColors.surfaceVariant,
+                            child: const Icon(Icons.person),
+                          ),
+                        )
                       : Container(
                           color: AppColors.surfaceVariant,
-                          child: const Icon(Icons.person)),
+                          child: const Icon(Icons.person),
+                        ),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -717,19 +681,23 @@ class _PublicProfileCard extends StatelessWidget {
                   children: [
                     Text(user.nameAndAge, style: AppTextStyles.headingSmall),
                     if (user.occupation != null)
-                      Text(user.occupation!,
-                          style: AppTextStyles.bodySmall),
+                      Text(user.occupation!, style: AppTextStyles.bodySmall),
                     if (user.venueName != null)
                       Row(
                         children: [
-                          const Icon(Icons.coffee_outlined,
-                              size: 11, color: AppColors.accent),
+                          const Icon(
+                            Icons.coffee_outlined,
+                            size: 11,
+                            color: AppColors.accent,
+                          ),
                           const SizedBox(width: 2),
                           Flexible(
                             child: Text(
                               '${user.venueName!}  ·  ${user.distanceLabel}',
                               style: const TextStyle(
-                                  fontSize: 11, color: AppColors.accent),
+                                fontSize: 11,
+                                color: AppColors.accent,
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
@@ -742,8 +710,11 @@ class _PublicProfileCard extends StatelessWidget {
                 onTap: onClose,
                 child: const Padding(
                   padding: EdgeInsets.all(4),
-                  child: Icon(Icons.close,
-                      size: 18, color: AppColors.textSecondary),
+                  child: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ),
             ],
@@ -767,8 +738,7 @@ class _PublicProfileCard extends StatelessWidget {
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          NearbyProfileDetailView(user: user),
+                      builder: (_) => NearbyProfileDetailView(user: user),
                     ),
                   ),
                 ),
@@ -817,8 +787,11 @@ class _PrivateProfileCard extends StatelessWidget {
               color: AppColors.surfaceVariant,
               border: Border.all(color: AppColors.border, width: 2),
             ),
-            child: const Icon(Icons.lock_outline,
-                size: 22, color: AppColors.textDisabled),
+            child: const Icon(
+              Icons.lock_outline,
+              size: 22,
+              color: AppColors.textDisabled,
+            ),
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
@@ -832,7 +805,9 @@ class _PrivateProfileCard extends StatelessWidget {
                 const Text(
                   'Bağlantı kurmak için istek gönder.',
                   style: TextStyle(
-                      fontSize: 11, color: AppColors.textSecondary),
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -845,7 +820,9 @@ class _PrivateProfileCard extends StatelessWidget {
                 onTap: onClose,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm, vertical: 6),
+                    horizontal: AppSpacing.sm,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.secondary,
                     borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -853,17 +830,21 @@ class _PrivateProfileCard extends StatelessWidget {
                   child: const Text(
                     'İstek Gönder',
                     style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600),
+                      fontSize: 11,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 6),
               GestureDetector(
                 onTap: onClose,
-                child: const Icon(Icons.close,
-                    size: 16, color: AppColors.textSecondary),
+                child: const Icon(
+                  Icons.close,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -903,8 +884,9 @@ class _CardActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: filled ? color : color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border:
-              filled ? null : Border.all(color: color.withValues(alpha: 0.3)),
+          border: filled
+              ? null
+              : Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

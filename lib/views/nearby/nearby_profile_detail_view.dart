@@ -24,7 +24,9 @@ class NearbyProfileDetailView extends StatelessWidget {
           if (user.meetGoal != null && user.meetGoal!.isNotEmpty)
             SliverToBoxAdapter(child: _GoalCard(goal: user.meetGoal!)),
           if (user.interests.isNotEmpty)
-            SliverToBoxAdapter(child: _ExpertiseCard(interests: user.interests)),
+            SliverToBoxAdapter(
+              child: _ExpertiseCard(interests: user.interests),
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
@@ -76,7 +78,11 @@ class NearbyProfileDetailView extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.person_add_rounded, color: Colors.white, size: 20),
+                      Icon(
+                        Icons.person_add_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                       SizedBox(width: 12),
                       Text(
                         'Bağlantı İsteği Gönder',
@@ -128,28 +134,48 @@ class _ProfileHeader extends StatelessWidget {
                 child: SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                           onPressed: () => Navigator.pop(context),
                         ),
                         if (user.venueName != null)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.black.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(AppRadius.full),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.location_on_rounded, color: Colors.white, size: 12),
+                                const Icon(
+                                  Icons.location_on_rounded,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   user.venueName!,
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -185,7 +211,10 @@ class _ProfileHeader extends StatelessWidget {
                         ? Center(
                             child: Text(
                               user.name[0].toUpperCase(),
-                              style: AppTextStyles.displayLarge.copyWith(color: AppColors.textDisabled, fontSize: 40),
+                              style: AppTextStyles.displayLarge.copyWith(
+                                color: AppColors.textDisabled,
+                                fontSize: 40,
+                              ),
                             ),
                           )
                         : null,
@@ -209,7 +238,9 @@ class _ProfileHeader extends StatelessWidget {
                         children: [
                           Text(
                             user.name,
-                            style: AppTextStyles.displayMedium.copyWith(fontWeight: FontWeight.w800),
+                            style: AppTextStyles.displayMedium.copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                           if (user.occupation != null) ...[
                             const SizedBox(height: 4),
@@ -225,15 +256,23 @@ class _ProfileHeader extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.success.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: AppColors.success.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Text(
                         'Müsait',
-                        style: AppTextStyles.labelSmall.copyWith(color: AppColors.success, fontWeight: FontWeight.w800),
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],
@@ -241,18 +280,30 @@ class _ProfileHeader extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    const Icon(Icons.social_distance_rounded, size: 14, color: AppColors.textDisabled),
+                    const Icon(
+                      Icons.social_distance_rounded,
+                      size: 14,
+                      color: AppColors.textDisabled,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       user.distanceLabel,
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(width: 16),
-                    const Icon(Icons.work_history_rounded, size: 14, color: AppColors.textDisabled),
+                    const Icon(
+                      Icons.work_history_rounded,
+                      size: 14,
+                      color: AppColors.textDisabled,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Bağlantı kurabilir',
-                      style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                      style: AppTextStyles.caption.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -273,7 +324,12 @@ class _BioCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.sm,
+        AppSpacing.base,
+        0,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.base),
         decoration: BoxDecoration(
@@ -301,7 +357,12 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.sm,
+        AppSpacing.base,
+        0,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.base),
         decoration: BoxDecoration(
@@ -317,9 +378,19 @@ class _GoalCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Bağlantı Hedefi', style: AppTextStyles.labelSmall.copyWith(color: AppColors.secondary)),
+                  Text(
+                    'Bağlantı Hedefi',
+                    style: AppTextStyles.labelSmall.copyWith(
+                      color: AppColors.secondary,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(goal, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    goal,
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -337,7 +408,12 @@ class _ExpertiseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.sm,
+        AppSpacing.base,
+        0,
+      ),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.base),
         decoration: BoxDecoration(
@@ -353,15 +429,27 @@ class _ExpertiseCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: interests.map((i) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(i, style: AppTextStyles.labelSmall.copyWith(fontWeight: FontWeight.w700)),
-              )).toList(),
+              children: interests
+                  .map(
+                    (i) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Text(
+                        i,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
@@ -371,7 +459,11 @@ class _ExpertiseCard extends StatelessWidget {
 }
 
 class _CircleAction extends StatelessWidget {
-  const _CircleAction({required this.icon, required this.onTap, required this.color});
+  const _CircleAction({
+    required this.icon,
+    required this.onTap,
+    required this.color,
+  });
   final IconData icon;
   final VoidCallback onTap;
   final Color color;

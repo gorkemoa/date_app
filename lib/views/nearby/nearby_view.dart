@@ -12,6 +12,7 @@ import '../../models/nearby/nearby_user_model.dart';
 import '../../viewmodels/nearby/nearby_view_model.dart';
 import '../shared/components/error_state_view.dart';
 import '../shared/components/loading_view.dart';
+import '../shared/components/story_viewer.dart';
 import 'nearby_profile_detail_view.dart';
 
 class NearbyView extends StatefulWidget {
@@ -72,7 +73,32 @@ class _NearbyViewState extends State<NearbyView>
       _zoomFrom = _mapController.camera.zoom;
       _zoomTo = 16.5;
       _flyAnim.forward(from: 0);
+
+      // Public kullanıcı → story aç
+      if (!user.isPrivate) {
+        _showStory(user);
+      }
     }
+  }
+
+  void _showStory(NearbyUserModel user) {
+    final allPublic = context
+        .read<NearbyViewModel>()
+        .nearbyUsers
+        .where((u) => !u.isPrivate && u.photoUrl != null)
+        .toList();
+    final index = allPublic.indexWhere((u) => u.id == user.id);
+    if (index < 0) return;
+    final items = allPublic
+        .map((u) => StoryItem(
+              name: '${u.name}, ${u.age}',
+              photoUrl: u.photoUrl,
+              timeLabel: u.venueName != null
+                  ? '${u.venueName}  ·  ${u.distanceLabel}'
+                  : u.distanceLabel,
+            ))
+        .toList();
+    showStoryViewer(context, items, index);
   }
 
   @override
@@ -262,19 +288,44 @@ class _MapPin extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Instagram-style gradient ring
         Container(
-          width: 46,
-          height: 46,
+          padding: const EdgeInsets.all(2.5),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: color, width: 2.5),
+            gradient: isSelected
+                ? const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFFE040FB),
+                      Color(0xFFFF6B35),
+                      Color(0xFFFFD700),
+                    ],
+                  )
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withValues(alpha: 0.7), color],
+                  ),
             boxShadow: isSelected ? AppShadows.primaryGlow : AppShadows.md,
           ),
-          child: ClipOval(
-            child: user.photoUrl != null
-                ? Image.network(user.photoUrl!, fit: BoxFit.cover,
-                    errorBuilder: (c, e, s) => _fallback(color))
-                : _fallback(color),
+          child: Container(
+            padding: const EdgeInsets.all(1.5),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: ClipOval(
+              child: SizedBox(
+                width: 42,
+                height: 42,
+                child: user.photoUrl != null
+                    ? Image.network(user.photoUrl!, fit: BoxFit.cover,
+                        errorBuilder: (c, e, s) => _fallback(color))
+                    : _fallback(color),
+              ),
+            ),
           ),
         ),
         CustomPaint(
@@ -531,32 +582,66 @@ class _NearbyBarChip extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: user.isPrivate ? AppColors.surfaceVariant : null,
-                border: Border.all(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                  width: 2,
+            // Public → gradient ring, Private → lock icon
+            if (!user.isPrivate)
+              Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: isSelected
+                      ? const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFFE040FB),
+                            Color(0xFFFF6B35),
+                            Color(0xFFFFD700),
+                          ],
+                        )
+                      : const LinearGradient(
+                          colors: [AppColors.accent, AppColors.secondary],
+                        ),
                 ),
-                boxShadow: AppShadows.sm,
+                child: Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: ClipOval(
+                    child: SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: user.photoUrl != null
+                          ? Image.network(
+                              user.photoUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) =>
+                                  const Icon(Icons.person, size: 20),
+                            )
+                          : const Icon(Icons.person, size: 20),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surfaceVariant,
+                  border: Border.all(
+                    color: isSelected ? AppColors.primary : AppColors.border,
+                    width: 2,
+                  ),
+                  boxShadow: AppShadows.sm,
+                ),
+                child: const ClipOval(
+                  child: Icon(Icons.lock_outline,
+                      size: 18, color: AppColors.textDisabled),
+                ),
               ),
-              child: ClipOval(
-                child: user.isPrivate
-                    ? const Icon(Icons.lock_outline,
-                        size: 18, color: AppColors.textDisabled)
-                    : user.photoUrl != null
-                        ? Image.network(
-                            user.photoUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) =>
-                                const Icon(Icons.person, size: 20),
-                          )
-                        : const Icon(Icons.person, size: 20),
-              ),
-            ),
             const SizedBox(height: 3),
             Text(
               user.isPrivate ? '•••' : user.name,

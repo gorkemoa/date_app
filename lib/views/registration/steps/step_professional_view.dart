@@ -16,24 +16,36 @@ class StepOtpView extends StatefulWidget {
 }
 
 class _StepOtpViewState extends State<StepOtpView> {
-  final _controllers = List.generate(6, (_) => TextEditingController());
-  final _focuses = List.generate(6, (_) => FocusNode());
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    
+    // Auto-focus with a slight delay to ensure stable keyboard opening
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
 
   @override
   void dispose() {
-    for (final c in _controllers) c.dispose();
-    for (final f in _focuses) f.dispose();
+    _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _onChanged(int i, String v) {
-    if (v.isEmpty && i > 0) {
-      _focuses[i - 1].requestFocus();
-    } else if (v.length == 1 && i < 5) {
-      _focuses[i + 1].requestFocus();
+  void _onChanged(String v) {
+    final vm = context.read<RegistrationViewModel>();
+    vm.updateOtp(v);
+
+    // Auto-advance if 6 digits are entered
+    if (v.length == 6) {
+      vm.nextStep();
     }
-    final code = _controllers.map((c) => c.text).join();
-    context.read<RegistrationViewModel>().updateOtp(code);
   }
 
   @override
@@ -45,7 +57,8 @@ class _StepOtpViewState extends State<StepOtpView> {
         : phone;
 
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+      onTap: () => _focusNode.requestFocus(),
+      behavior: HitTestBehavior.opaque,
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xl,
@@ -76,53 +89,75 @@ class _StepOtpViewState extends State<StepOtpView> {
               ),
             ),
             const SizedBox(height: AppSpacing.xxxl),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(6, (i) {
-                return Expanded(
-                  child: Container(
-                    margin: EdgeInsets.only(right: i < 5 ? AppSpacing.sm : 0),
+            
+            // Hidden TextField to capture input
+            Stack(
+              children: [
+                Opacity(
+                  opacity: 0,
+                  child: SizedBox(
+                    height: 1,
                     child: TextField(
-                      controller: _controllers[i],
-                      focusNode: _focuses[i],
-                      textAlign: TextAlign.center,
+                      controller: _controller,
+                      focusNode: _focusNode,
                       keyboardType: TextInputType.number,
-                      maxLength: 1,
-                      autofocus: i == 0,
+                      showCursor: false,
+                      autofocus: true,
+                      onChanged: _onChanged,
+                      maxLength: 6,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      onChanged: (v) => _onChanged(i, v),
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        filled: true,
-                        fillColor: AppColors.surfaceVariant,
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 16),
-                        border: OutlineInputBorder(
+                      decoration: const InputDecoration(counterText: ''),
+                    ),
+                  ),
+                ),
+                // Visual Boxes
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: List.generate(6, (i) {
+                    final char = _controller.text.length > i ? _controller.text[i] : '';
+                    final isActive = _controller.text.length == i;
+                    final isFilled = _controller.text.length > i;
+
+                    return Expanded(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        margin: EdgeInsets.only(right: i < 5 ? AppSpacing.sm : 0),
+                        height: 60,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: isActive 
+                            ? Colors.white 
+                            : AppColors.surfaceVariant.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          borderSide: BorderSide.none,
+                          border: Border.all(
+                            color: isActive 
+                              ? AppColors.primary 
+                              : isFilled 
+                                ? AppColors.primary.withValues(alpha: 0.4) 
+                                : AppColors.border,
+                            width: isActive ? 2.5 : 1,
+                          ),
+                          boxShadow: isActive ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ] : null,
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          borderSide:
-                              const BorderSide(color: AppColors.border),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          borderSide: const BorderSide(
-                            color: AppColors.primary,
-                            width: 2,
+                        child: Text(
+                          char,
+                          style: const TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                    ),
-                  ),
-                );
-              }),
+                    );
+                  }),
+                ),
+              ],
             ),
             const SizedBox(height: AppSpacing.xxl),
             Center(

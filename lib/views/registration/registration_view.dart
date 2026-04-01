@@ -20,9 +20,8 @@ class RegistrationView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => RegistrationViewModel(
-        linkedInParser: LinkedInParserService(),
-      ),
+      create: (_) =>
+          RegistrationViewModel(linkedInParser: LinkedInParserService()),
       child: const _RegistrationContent(),
     );
   }
@@ -90,10 +89,7 @@ class _RegistrationContentState extends State<_RegistrationContent> {
       appBar: _buildAppBar(vm),
       body: Column(
         children: [
-          _StepProgressBar(
-            currentIndex: vm.stepIndex,
-            total: vm.totalSteps,
-          ),
+          _StepProgressBar(currentIndex: vm.stepIndex, total: vm.totalSteps),
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -102,7 +98,9 @@ class _RegistrationContentState extends State<_RegistrationContent> {
                 StepPhoneView(),
                 StepOtpView(),
                 StepReferralView(),
-                StepProfileView(),
+                StepIdentityView(),
+                StepExpertiseView(),
+                StepInterestsView(),
                 StepRulesView(),
               ],
             ),
@@ -141,8 +139,12 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         buttonColor = AppColors.primary;
         break;
       case RegStep.referral:
-      case RegStep.profile:
+      case RegStep.identity:
         buttonColor = AppColors.secondary;
+        break;
+      case RegStep.expertise:
+      case RegStep.interests:
+        buttonColor = AppColors.secondaryLight;
         break;
       case RegStep.rules:
         buttonColor = AppColors.accent;
@@ -166,12 +168,18 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         width: double.infinity,
         height: 50,
         child: ElevatedButton(
-          onPressed: vm.canGoNext ? vm.nextStep : null,
+          onPressed: vm.canGoNext
+              ? () {
+                  FocusScope.of(context).unfocus();
+                  vm.nextStep();
+                }
+              : null,
           style: ElevatedButton.styleFrom(
             backgroundColor: buttonColor,
             disabledBackgroundColor: AppColors.border,
-            foregroundColor:
-                isAccentStep ? AppColors.textOnAccent : Colors.white,
+            foregroundColor: isAccentStep
+                ? AppColors.textOnAccent
+                : Colors.white,
             disabledForegroundColor: AppColors.textDisabled,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -196,8 +204,12 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         return 'Kod Doğrulama';
       case RegStep.referral:
         return 'Davet Kodu';
-      case RegStep.profile:
-        return 'Profil Oluştur';
+      case RegStep.identity:
+        return 'Profil Kimliği';
+      case RegStep.expertise:
+        return 'Kariyer ve Uzmanlık';
+      case RegStep.interests:
+        return 'İlgi Alanları';
       case RegStep.rules:
         return 'Topluluk Kuralları';
     }
@@ -211,8 +223,12 @@ class _RegistrationContentState extends State<_RegistrationContent> {
         return 'Doğrula';
       case RegStep.referral:
         return 'Devam Et';
-      case RegStep.profile:
+      case RegStep.identity:
+        return 'Kimliği Onayla';
+      case RegStep.expertise:
         return 'Devam Et';
+      case RegStep.interests:
+        return 'İlgi Alanlarını Kaydet';
       case RegStep.rules:
         return 'Anladım, Başla';
     }

@@ -44,6 +44,7 @@ class _StepOtpViewState extends State<StepOtpView> {
 
     // Auto-advance if 6 digits are entered
     if (v.length == 6) {
+      _focusNode.unfocus();
       vm.nextStep();
     }
   }

@@ -16,24 +16,33 @@ class StepReferralView extends StatefulWidget {
 
 class _StepReferralViewState extends State<StepReferralView> {
   late final TextEditingController _codeCtrl;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     final draft = context.read<RegistrationViewModel>().draft;
     _codeCtrl = TextEditingController(text: draft.referralCode);
+    _focusNode = FocusNode();
+    
+    // Ensure regular keyboard focus after transition
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _focusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _codeCtrl.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+      onTap: () => _focusNode.requestFocus(),
+      behavior: HitTestBehavior.opaque,
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.xl,
@@ -86,8 +95,11 @@ class _StepReferralViewState extends State<StepReferralView> {
             const SizedBox(height: AppSpacing.xl),
             TextField(
               controller: _codeCtrl,
+              focusNode: _focusNode,
               autofocus: true,
               textCapitalization: TextCapitalization.characters,
+              keyboardType: TextInputType.text, // Normal keyboard
+              textInputAction: TextInputAction.done,
               onChanged: (v) => context
                   .read<RegistrationViewModel>()
                   .updateReferralCode(v.trim()),

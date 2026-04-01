@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -9,6 +8,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/registration/expertise_item_model.dart';
 import '../../../viewmodels/registration/registration_view_model.dart';
+import '../../../widgets/common/safe_svg_picture.dart';
 
 class ExpertiseSelectionView extends StatefulWidget {
   const ExpertiseSelectionView({super.key});
@@ -87,11 +87,10 @@ class _ExpertiseSelectionViewState extends State<ExpertiseSelectionView> {
                 runSpacing: 4,
                 children: draft.selectedExpertise.map((item) => Chip(
                   label: Text(item.title, style: AppTextStyles.labelSmall),
-                  avatar: item.iconUrl.isNotEmpty ? SvgPicture.network(
+                  avatar: item.iconUrl.isNotEmpty ? SafeSvgPicture.network(
                     item.iconUrl,
                     width: 16,
                     height: 16,
-                    headers: const {'Accept': 'image/svg+xml'},
                   ) : null,
                   onDeleted: () => vm.toggleExpertise(item),
                   backgroundColor: AppColors.surfaceVariant,
@@ -240,12 +239,11 @@ class _ExpertiseSelectionViewState extends State<ExpertiseSelectionView> {
         final isSelected = selectedItems.contains(item);
         return ListTile(
           contentPadding: EdgeInsets.zero,
-          leading: SvgPicture.network(
+          leading: SafeSvgPicture.network(
             item.iconUrl,
             width: 32,
             height: 32,
-            placeholderBuilder: (_) => Container(width: 32, height: 32, color: AppColors.surfaceVariant),
-            headers: const {'Accept': 'image/svg+xml'},
+            placeholder: Container(width: 32, height: 32, color: AppColors.surfaceVariant),
           ),
           title: Text(item.title),
           trailing: Icon(

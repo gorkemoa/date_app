@@ -1,6 +1,5 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -9,123 +8,46 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/registration/expertise_item_model.dart';
 import '../../../viewmodels/registration/registration_view_model.dart';
+import '../../../widgets/common/safe_svg_picture.dart';
 import 'expertise_selection_view.dart';
 
-class StepProfileView extends StatefulWidget {
-  const StepProfileView({super.key});
+// ─────────────────────────────────────────────────────────────────
+// STEP 1: IDENTITY (Photo & Bio)
+// ─────────────────────────────────────────────────────────────────
+class StepIdentityView extends StatefulWidget {
+  const StepIdentityView({super.key});
 
   @override
-  State<StepProfileView> createState() => _StepProfileViewState();
+  State<StepIdentityView> createState() => _StepIdentityViewState();
 }
 
-class _StepProfileViewState extends State<StepProfileView> {
-  late final TextEditingController _nameCtrl;
+class _StepIdentityViewState extends State<StepIdentityView> {
   late final TextEditingController _bioCtrl;
-  late final TextEditingController _expertiseSearchCtrl;
-  bool _isPickerActive = false;
 
   @override
   void initState() {
     super.initState();
-    final vm = context.read<RegistrationViewModel>();
-    final draft = vm.draft;
-    _nameCtrl = TextEditingController(text: draft.displayName);
+    final draft = context.read<RegistrationViewModel>().draft;
     _bioCtrl = TextEditingController(text: draft.bio);
-    _expertiseSearchCtrl = TextEditingController();
-
-    // İlk açılışta varsayılan kategori (Teknoloji) araması tetiklensin
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      vm.searchExpertiseIcons('');
-    });
   }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
     _bioCtrl.dispose();
-    _expertiseSearchCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickPhoto() async {
-    if (_isPickerActive) return;
-    setState(() => _isPickerActive = true);
-    try {
-      final result = await FilePicker.platform
-          .pickFiles(type: FileType.image, withData: true);
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.bytes == null || !mounted) return;
-      context
-          .read<RegistrationViewModel>()
-          .setPhoto(bytes: file.bytes!, fileName: file.name);
-    } finally {
-      if (mounted) setState(() => _isPickerActive = false);
-    }
-  }
-
-  Future<void> _pickCv() async {
-    if (_isPickerActive) return;
-    setState(() => _isPickerActive = true);
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        withData: true,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.bytes == null || !mounted) return;
-      context
-          .read<RegistrationViewModel>()
-          .setCv(bytes: file.bytes!, fileName: file.name);
-    } finally {
-      if (mounted) setState(() => _isPickerActive = false);
-    }
-  }
-
-  Future<void> _connectLinkedIn() async {
-    if (_isPickerActive) return;
-    setState(() => _isPickerActive = true);
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['pdf'],
-        withData: true,
-      );
-      if (result == null || result.files.isEmpty) return;
-      final file = result.files.first;
-      if (file.bytes == null || !mounted) return;
-      await context
-          .read<RegistrationViewModel>()
-          .connectLinkedIn(file.bytes!, file.name);
-    } finally {
-      if (mounted) setState(() => _isPickerActive = false);
-    }
-  }
-
-  InputDecoration _inputDecoration({required String hint}) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textDisabled, fontSize: 15),
-      filled: true,
-      fillColor: AppColors.surfaceVariant,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.secondary, width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.md,
-      ),
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null || !mounted) return;
+    context.read<RegistrationViewModel>().setPhoto(
+      bytes: file.bytes!,
+      fileName: file.name,
     );
   }
 
@@ -134,385 +56,452 @@ class _StepProfileViewState extends State<StepProfileView> {
     final vm = context.watch<RegistrationViewModel>();
     final draft = vm.draft;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl,
-          vertical: AppSpacing.base,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: AppSpacing.lg),
-            const Text('Profilini Oluştur', style: AppTextStyles.displayMedium),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Seni tanıyalım',
-              style: AppTextStyles.bodyLarge
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // ── Kimlik ────────────────────────────────────────────
-            const _SectionTitle(title: 'Kimlik'),
-            const SizedBox(height: AppSpacing.md),
-
-            Center(
-              child: GestureDetector(
-                onTap: _pickPhoto,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: draft.photoBytes != null
-                        ? Colors.transparent
-                        : AppColors.surfaceVariant,
-                    border: Border.all(
-                      color: draft.photoBytes != null
-                          ? AppColors.primary
-                          : AppColors.border,
-                      width: 2,
-                    ),
-                  ),
-                  child: draft.photoBytes != null
-                      ? ClipOval(
-                          child: Image.memory(
-                            draft.photoBytes!,
-                            width: 96,
-                            height: 96,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.add_a_photo_outlined,
-                          color: AppColors.textSecondary,
-                          size: 28,
-                        ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Center(
-              child: Text(
-                'Fotoğraf ekle',
-                style: AppTextStyles.caption
-                    .copyWith(color: AppColors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            const _FieldLabel(text: 'Ad *'),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _nameCtrl,
-              textCapitalization: TextCapitalization.words,
-              onChanged: (v) => context
-                  .read<RegistrationViewModel>()
-                  .updateProfile(displayName: v.trim()),
-              style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-              decoration: _inputDecoration(hint: 'Adın ve soyadın'),
-            ),
-            const SizedBox(height: AppSpacing.base),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const _FieldLabel(text: 'Kısa Bio'),
-                Text(
-                  '${_bioCtrl.text.length}/120',
-                  style: AppTextStyles.caption.copyWith(
-                    color: _bioCtrl.text.length >= 110
-                        ? AppColors.error
-                        : AppColors.textDisabled,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            TextField(
-              controller: _bioCtrl,
-              maxLines: 3,
-              maxLength: 120,
-              onChanged: (v) {
-                setState(() {});
-                context.read<RegistrationViewModel>().updateProfile(bio: v);
-              },
-              style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
-              decoration: _inputDecoration(
-                      hint: 'Kendinle ilgili kısa bir şey...')
-                  .copyWith(counterText: ''),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // ── Kariyer ─────────────────────────────────────────
-            const _SectionTitle(title: 'Kariyer'),
-            const SizedBox(height: AppSpacing.md),
-
-            const _FieldLabel(text: 'CV (PDF)'),
-            const SizedBox(height: AppSpacing.xs),
-            _UploadTile(
-              icon: Icons.description_outlined,
-              label: draft.cvFileName ?? 'CV yükle',
-              isUploaded: draft.cvFileName != null,
-              onTap: _pickCv,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── Uzmanlık Alanı ───────────────────────────────────
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const _FieldLabel(text: 'Uzmanlık Alanları'),
-                TextButton.icon(
-                  onPressed: () {
-                    final vm = context.read<RegistrationViewModel>();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ChangeNotifierProvider.value(
-                          value: vm,
-                          child: const ExpertiseSelectionView(),
-                        ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.add_circle_outline, size: 16),
-                  label: const Text('Ekle / Düzenle', style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(foregroundColor: AppColors.secondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs),
-
-            if (draft.selectedExpertise.isNotEmpty) ...[
-              Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: draft.selectedExpertise
-                    .map((e) => _ExpertiseChip(
-                          item: e,
-                          onDeleted: () => context
-                              .read<RegistrationViewModel>()
-                              .toggleExpertise(e),
-                        ))
-                    .toList(),
-              ),
-            ] else
-              GestureDetector(
-                onTap: () {
-                  final vm = context.read<RegistrationViewModel>();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ChangeNotifierProvider.value(
-                        value: vm,
-                        child: const ExpertiseSelectionView(),
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.search, color: AppColors.textSecondary, size: 20),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text('Uzmanlık Seçmek İçin Dokun', 
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
-                    ],
-                  ),
-                ),
-              ),
-
-            const SizedBox(height: AppSpacing.xl),
-
-            // ── İlgi Alanları ────────────────────────────────────────
-            const _SectionTitle(title: 'İlgi Alanları'),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${draft.selectedInterests.length} alan seçildi',
-              style: AppTextStyles.caption.copyWith(
-                color: draft.selectedInterests.isNotEmpty
-                    ? AppColors.success
-                    : AppColors.textDisabled,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
-              children: RegistrationViewModel.availableInterests.map((interest) {
-                final selected = draft.selectedInterests.contains(interest);
-                return _InterestChip(
-                  label: interest,
-                  isSelected: selected,
-                  onTap: () => context
-                      .read<RegistrationViewModel>()
-                      .toggleInterest(interest),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-
-            // ── LinkedIn (opsiyonel) ───────────────────────────────────
-            const _SectionTitle(title: 'LinkedIn'),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              'Opsiyonel — LinkedIn bağlarsan profilinde rozet gösterilir.',
-              style: AppTextStyles.bodySmall
-                  .copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            if (draft.linkedInConnected)
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.xxxl),
+          Row(
+            children: [
               Container(
-                padding: const EdgeInsets.all(AppSpacing.base),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(
-                      color: AppColors.success.withValues(alpha: 0.3)),
+                  color: AppColors.secondary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.verified_rounded,
-                        color: AppColors.success, size: 22),
-                    const SizedBox(width: AppSpacing.sm),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'LinkedIn Bağlandı ✓',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.success,
-                          ),
-                        ),
-                        Text(
-                          'Profilinde LinkedIn rozeti görünecek',
-                          style: AppTextStyles.caption
-                              .copyWith(color: AppColors.success),
+                child: const Icon(
+                  Icons.face_retouching_natural,
+                  color: AppColors.secondary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Text('Kimlik & Vizyon', style: AppTextStyles.displayMedium),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+            'Profesyonel kimliğini yansıtan bir fotoğraf ve kısa bir vizyon cümlesi belirle.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.massive),
+
+          Center(
+            child: Stack(
+              children: [
+                GestureDetector(
+                  onTap: _pickPhoto,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.surfaceVariant,
+                      border: Border.all(
+                        color: draft.photoBytes != null
+                            ? AppColors.primary
+                            : AppColors.border,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
-                  ],
+                    child: draft.photoBytes != null
+                        ? ClipOval(
+                            child: Image.memory(
+                              draft.photoBytes!,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.add_a_photo_rounded,
+                            color: AppColors.textSecondary,
+                            size: 40,
+                          ),
+                  ),
                 ),
-              )
-            else
-              _UploadTile(
-                icon: Icons.link_rounded,
-                label: 'LinkedIn Bağla (PDF ile)',
-                isUploaded: false,
-                color: AppColors.secondary,
-                onTap: vm.linkedInLoading ? null : _connectLinkedIn,
-                isLoading: vm.linkedInLoading,
-              ),
-            if (vm.hasError) ...[
-              const SizedBox(height: AppSpacing.sm),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.massive),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Profesyonel Bio', style: AppTextStyles.labelLarge),
               Text(
-                vm.errorMessage ?? '',
-                style: AppTextStyles.caption.copyWith(color: AppColors.error),
+                '${_bioCtrl.text.length}/140',
+                style: AppTextStyles.caption.copyWith(
+                  color: _bioCtrl.text.length > 120
+                      ? AppColors.error
+                      : AppColors.textDisabled,
+                ),
               ),
             ],
-            const SizedBox(height: AppSpacing.massive),
-          ],
-        ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: _bioCtrl,
+            maxLines: 4,
+            maxLength: 140,
+            textInputAction: TextInputAction.done,
+            onChanged: (v) {
+              setState(() {});
+              context.read<RegistrationViewModel>().updateProfile(bio: v);
+            },
+            decoration: InputDecoration(
+              hintText:
+                  'Örn: FinTech alanında ürün tasarımı yapan bir tutkuluyum...',
+              hintStyle: const TextStyle(
+                color: AppColors.textDisabled,
+                fontSize: 14,
+              ),
+              filled: true,
+              fillColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
+              counterText: '',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: const BorderSide(
+                  color: AppColors.secondary,
+                  width: 2,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title});
+// ─────────────────────────────────────────────────────────────────
+// STEP 2: EXPERTISE (CV & Skills)
+// ─────────────────────────────────────────────────────────────────
+class StepExpertiseView extends StatelessWidget {
+  const StepExpertiseView({super.key});
 
-  final String title;
+  Future<void> _pickCv(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null || !context.mounted) return;
+    context.read<RegistrationViewModel>().setCv(
+      bytes: file.bytes!,
+      fileName: file.name,
+    );
+  }
+
+  Future<void> _connectLinkedIn(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.first;
+    if (file.bytes == null || !context.mounted) return;
+    await context.read<RegistrationViewModel>().connectLinkedIn(
+      file.bytes!,
+      file.name,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(title, style: AppTextStyles.headingMedium),
-        const SizedBox(width: AppSpacing.sm),
-        const Expanded(child: Divider(color: AppColors.border, height: 1)),
-      ],
+    final vm = context.watch<RegistrationViewModel>();
+    final draft = vm.draft;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.xxxl),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: const Icon(
+                  Icons.work_outline_rounded,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Text(
+                'Kariyer ve Uzmanlık',
+                style: AppTextStyles.displayMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+            'Kangi alanlarda uzmansın? CV ve LinkedIn profilinle yetkinliklerini kanıtla.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.massive),
+
+          const _SectionHeader(title: 'Yetenek Kartları'),
+          const SizedBox(height: AppSpacing.md),
+
+          if (draft.selectedExpertise.isNotEmpty)
+            Wrap(
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
+              children: draft.selectedExpertise
+                  .map(
+                    (e) => _ExpertiseChip(
+                      item: e,
+                      onDeleted: () => vm.toggleExpertise(e),
+                    ),
+                  )
+                  .toList(),
+            ),
+
+          const SizedBox(height: AppSpacing.md),
+          _ExpertiseAddButton(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChangeNotifierProvider.value(
+                    value: vm,
+                    child: const ExpertiseSelectionView(),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: AppSpacing.massive),
+          const _SectionHeader(title: 'Belgeler'),
+          const SizedBox(height: AppSpacing.md),
+
+          _UploadTile(
+            title: 'Özgeçmiş (CV)',
+            subtitle: draft.cvFileName ?? 'PDF formatında yükle',
+            icon: Icons.description_outlined,
+            isCompleted: draft.cvFileName != null,
+            onTap: () => _pickCv(context),
+          ),
+          const SizedBox(height: AppSpacing.base),
+          _UploadTile(
+            title: 'LinkedIn Bağlantısı',
+            subtitle: draft.linkedInConnected
+                ? 'Profil rozeti aktif ✓'
+                : 'Profilini doğrula (PDF)',
+            icon: Icons.link_rounded,
+            isCompleted: draft.linkedInConnected,
+            onTap: vm.linkedInLoading ? null : () => _connectLinkedIn(context),
+            isLoading: vm.linkedInLoading,
+            color: const Color(0xFF0077B5),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel({required this.text});
-
-  final String text;
+// ─────────────────────────────────────────────────────────────────
+// STEP 3: INTERESTS
+// ─────────────────────────────────────────────────────────────────
+class StepInterestsView extends StatelessWidget {
+  const StepInterestsView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: AppTextStyles.labelLarge);
+    final vm = context.watch<RegistrationViewModel>();
+    final draft = vm.draft;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.xxxl),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: const Icon(
+                  Icons.favorite_outline_rounded,
+                  color: AppColors.accentDark,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              const Text('İlgi Alanları', style: AppTextStyles.displayMedium),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.base),
+          Text(
+            'Ortak noktalarda buluşabileceğin kişileri keşfetmek için en az 3 ilgi alanı seç.',
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.massive),
+
+          Wrap(
+            spacing: AppSpacing.xs,
+            runSpacing: AppSpacing.xs,
+            children: RegistrationViewModel.availableInterests.map((interest) {
+              final selected = draft.selectedInterests.contains(interest);
+              return _InterestChip(
+                label: interest,
+                isSelected: selected,
+                onTap: () => vm.toggleInterest(interest),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: AppSpacing.massive),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// HELPER COMPONENTS
+// ─────────────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      title.toUpperCase(),
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w900,
+        color: AppColors.textSecondary.withValues(alpha: 0.7),
+        letterSpacing: 1.5,
+      ),
+    );
   }
 }
 
 class _UploadTile extends StatelessWidget {
   const _UploadTile({
+    required this.title,
+    required this.subtitle,
     required this.icon,
-    required this.label,
-    required this.isUploaded,
+    required this.isCompleted,
     required this.onTap,
-    this.color = AppColors.textSecondary,
     this.isLoading = false,
+    this.color = AppColors.primary,
   });
 
+  final String title;
+  final String subtitle;
   final IconData icon;
-  final String label;
-  final bool isUploaded;
+  final bool isCompleted;
   final VoidCallback? onTap;
-  final Color color;
   final bool isLoading;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.base,
-          vertical: AppSpacing.md,
-        ),
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: isUploaded
-              ? color.withValues(alpha: 0.06)
-              : AppColors.surfaceVariant,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: isCompleted
+              ? color.withValues(alpha: 0.05)
+              : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: isUploaded ? color.withValues(alpha: 0.4) : AppColors.border,
+            color: isCompleted
+                ? color.withValues(alpha: 0.3)
+                : AppColors.border,
             width: 1.5,
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              isUploaded ? Icons.check_circle_outline : icon,
-              color: isUploaded ? color : AppColors.textSecondary,
-              size: 20,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isCompleted
+                    ? color.withValues(alpha: 0.1)
+                    : AppColors.surfaceVariant,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isCompleted ? Icons.check_rounded : icon,
+                color: isCompleted ? color : AppColors.textSecondary,
+                size: 20,
+              ),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.md),
             Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: isUploaded ? color : AppColors.textSecondary,
-                  fontWeight: isUploaded ? FontWeight.w600 : FontWeight.w400,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isCompleted ? color : AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: AppTextStyles.caption.copyWith(
+                      color: isCompleted
+                          ? color.withValues(alpha: 0.7)
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
             ),
             if (isLoading)
@@ -520,8 +509,64 @@ class _UploadTile extends StatelessWidget {
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(
-                    strokeWidth: 2, color: AppColors.secondary),
+                  strokeWidth: 2,
+                  color: AppColors.secondary,
+                ),
+              )
+            else if (!isCompleted)
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textDisabled,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpertiseAddButton extends StatelessWidget {
+  const _ExpertiseAddButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: AppColors.secondary,
+            width: 1,
+            style: BorderStyle.none,
+          ),
+          gradient: LinearGradient(
+            colors: [
+              AppColors.secondary.withValues(alpha: 0.05),
+              AppColors.secondary.withValues(alpha: 0.1),
+            ],
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.add_circle_outline_rounded,
+              color: AppColors.secondary,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Yetenek Seç veya Ekle',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.secondary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -531,49 +576,51 @@ class _UploadTile extends StatelessWidget {
 
 class _ExpertiseChip extends StatelessWidget {
   const _ExpertiseChip({required this.item, required this.onDeleted});
-
   final ExpertiseItem item;
   final VoidCallback onDeleted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.secondary.withValues(alpha: 0.1),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.full),
-        border:
-            Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SvgPicture.network(
+          SafeSvgPicture.network(
             item.iconUrl,
             width: 16,
             height: 16,
             fit: BoxFit.contain,
-            placeholderBuilder: (_) =>
-                const SizedBox(width: 16, height: 16),
-            headers: const {'Accept': 'image/svg+xml'},
+            placeholder: const SizedBox(width: 16, height: 16),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           Text(
             item.title,
             style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.secondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
           GestureDetector(
             onTap: onDeleted,
             child: const Icon(
-              Icons.close,
-              size: 14,
-              color: AppColors.secondary,
+              Icons.cancel_rounded,
+              size: 16,
+              color: AppColors.textDisabled,
             ),
           ),
         ],
@@ -598,24 +645,35 @@ class _InterestChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent : AppColors.surface,
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [AppColors.accent, AppColors.accentDark],
+                )
+              : null,
+          color: isSelected ? null : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.border,
-            width: isSelected ? 1.5 : 1,
+            color: isSelected ? AppColors.accentDark : AppColors.border,
+            width: 1.5,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColors.accent.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            fontSize: 14,
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
             color: isSelected
                 ? AppColors.textOnAccent
                 : AppColors.textSecondary,

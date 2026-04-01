@@ -10,7 +10,7 @@ import '../../models/registration/registration_draft_model.dart';
 import '../../services/interfaces/i_linkedin_parser_service.dart';
 import '../base/base_view_model.dart';
 
-enum RegStep { phone, otp, referral, profile, rules }
+enum RegStep { phone, otp, referral, identity, expertise, interests, rules }
 
 abstract class IExpertiseService {
   Future<List<String>> fetchCategories();
@@ -83,8 +83,12 @@ class RegistrationViewModel extends BaseViewModel {
         return _draft.otpCode.isNotEmpty;
       case RegStep.referral:
         return _draft.referralCode.isNotEmpty;
-      case RegStep.profile:
-        return _draft.displayName.isNotEmpty;
+      case RegStep.identity:
+        return _draft.photoBytes != null;
+      case RegStep.expertise:
+        return _draft.selectedExpertise.isNotEmpty || _draft.cvFileName != null;
+      case RegStep.interests:
+        return _draft.selectedInterests.length >= 3;
       case RegStep.rules:
         return true;
     }

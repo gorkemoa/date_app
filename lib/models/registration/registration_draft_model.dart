@@ -1,71 +1,78 @@
-import '../../core/enums/app_enums.dart';
+import 'dart:typed_data';
+
+import 'expertise_item_model.dart';
 
 class RegistrationDraftModel {
-  final DateTime? birthDate;
-  final UserGender? gender;
+  final String phoneNumber;
+  final String otpCode;
+  final String referralCode;
+  final String displayName;
+  final Uint8List? photoBytes;
+  final String? photoFileName;
   final String bio;
-  final String city;
-  final String district;
-  final String jobTitle;
-  final String company;
-  final String industry;
+  final Uint8List? cvBytes;
+  final String? cvFileName;
   final List<String> selectedInterests;
-  final bool linkedInImported;
-  final bool currentlyWorking;
+  final List<ExpertiseItem> selectedExpertise;
+  final bool linkedInConnected;
 
   const RegistrationDraftModel({
-    this.birthDate,
-    this.gender,
+    required this.phoneNumber,
+    required this.otpCode,
+    required this.referralCode,
+    required this.displayName,
+    this.photoBytes,
+    this.photoFileName,
     required this.bio,
-    required this.city,
-    required this.district,
-    required this.jobTitle,
-    required this.company,
-    required this.industry,
+    this.cvBytes,
+    this.cvFileName,
     required this.selectedInterests,
-    required this.linkedInImported,
-    this.currentlyWorking = true,
+    required this.selectedExpertise,
+    required this.linkedInConnected,
   });
 
-  static const empty = RegistrationDraftModel(
-    birthDate: null,
-    gender: null,
+  static const RegistrationDraftModel empty = RegistrationDraftModel(
+    phoneNumber: '',
+    otpCode: '',
+    referralCode: '',
+    displayName: '',
+    photoBytes: null,
+    photoFileName: null,
     bio: '',
-    city: '',
-    district: '',
-    jobTitle: '',
-    company: '',
-    industry: '',
+    cvBytes: null,
+    cvFileName: null,
     selectedInterests: [],
-    linkedInImported: false,
-    currentlyWorking: true,
+    selectedExpertise: [],
+    linkedInConnected: false,
   );
 
   RegistrationDraftModel copyWith({
-    DateTime? birthDate,
-    UserGender? gender,
+    String? phoneNumber,
+    String? otpCode,
+    String? referralCode,
+    String? displayName,
+    Uint8List? photoBytes,
+    String? photoFileName,
     String? bio,
-    String? city,
-    String? district,
-    String? jobTitle,
-    String? company,
-    String? industry,
+    Uint8List? cvBytes,
+    String? cvFileName,
     List<String>? selectedInterests,
-    bool? linkedInImported,
-    bool? currentlyWorking,
+    List<ExpertiseItem>? selectedExpertise,
+    bool? linkedInConnected,
   }) {
     return RegistrationDraftModel(
-      birthDate: birthDate ?? this.birthDate,
-      gender: gender ?? this.gender,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      otpCode: otpCode ?? this.otpCode,
+      referralCode: referralCode ?? this.referralCode,
+      displayName: displayName ?? this.displayName,
+      photoBytes: photoBytes ?? this.photoBytes,
+      photoFileName: photoFileName ?? this.photoFileName,
       bio: bio ?? this.bio,
-      city: city ?? this.city,
-      district: district ?? this.district,
-      jobTitle: jobTitle ?? this.jobTitle,
-      company: company ?? this.company,
-      industry: industry ?? this.industry,
+      cvBytes: cvBytes ?? this.cvBytes,
+      cvFileName: cvFileName ?? this.cvFileName,
       selectedInterests: selectedInterests ?? this.selectedInterests,
-      linkedInImported: linkedInImported ?? this.linkedInImported,
-      currentlyWorking: currentlyWorking ?? this.currentlyWorking,
+      selectedExpertise: selectedExpertise ?? this.selectedExpertise,
+      linkedInConnected: linkedInConnected ?? this.linkedInConnected,
     );
   }
 }

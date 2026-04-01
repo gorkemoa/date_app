@@ -98,7 +98,7 @@ class _MatchesViewState extends State<MatchesView> {
                     ),
                     SliverList.separated(
                       itemCount: conversations.length,
-                      separatorBuilder: (_, __) => const Divider(
+                      separatorBuilder: (_, _) => const Divider(
                         height: 1,
                         indent: AppSpacing.xl + 52 + AppSpacing.sm,
                         endIndent: AppSpacing.xl,

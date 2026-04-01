@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/enums/app_enums.dart';
 import '../../core/routing/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
@@ -13,6 +12,7 @@ import 'steps/step_basic_info_view.dart';
 import 'steps/step_complete_view.dart';
 import 'steps/step_interests_view.dart';
 import 'steps/step_professional_view.dart';
+import 'steps/step_profile_view.dart';
 
 class RegistrationView extends StatelessWidget {
   const RegistrationView({super.key});
@@ -54,7 +54,6 @@ class _RegistrationContentState extends State<_RegistrationContent> {
   void _onStepChanged() {
     if (!mounted) return;
 
-    // Kayıt tamamlandı sinyali — ana sayfaya geç
     if (_vm.readyToNavigateHome) {
       _vm.clearNavigationFlag();
       Navigator.pushNamedAndRemoveUntil(
@@ -65,8 +64,6 @@ class _RegistrationContentState extends State<_RegistrationContent> {
       return;
     }
 
-    // Rebuild bittikten sonra sayfa geçişini yap — böylece
-    // PageView element'i yeniden oluşturulmuşsa bile doğru sayfaya gidilir.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _pageController.animateToPage(
@@ -87,33 +84,30 @@ class _RegistrationContentState extends State<_RegistrationContent> {
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<RegistrationViewModel>();
-    final isComplete = vm.step == RegistrationStep.complete;
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: isComplete ? null : _buildAppBar(vm),
+      appBar: _buildAppBar(vm),
       body: Column(
         children: [
-          if (!isComplete)
-            _StepProgressBar(
-              currentIndex: vm.stepIndex,
-              // complete step is the last — don't count it in progress dots
-              total: vm.totalSteps - 1,
-            ),
+          _StepProgressBar(
+            currentIndex: vm.stepIndex,
+            total: vm.totalSteps,
+          ),
           Expanded(
-            key: const ValueKey('reg_pager'),
             child: PageView(
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: const [
-                StepBasicInfoView(),
-                StepProfessionalView(),
-                StepInterestsView(),
-                StepCompleteView(),
+                StepPhoneView(),
+                StepOtpView(),
+                StepReferralView(),
+                StepProfileView(),
+                StepRulesView(),
               ],
             ),
           ),
-          if (!isComplete) _buildNavBar(context, vm),
+          _buildNavBar(context, vm),
         ],
       ),
     );
@@ -140,23 +134,22 @@ class _RegistrationContentState extends State<_RegistrationContent> {
   }
 
   Widget _buildNavBar(BuildContext context, RegistrationViewModel vm) {
-    final isLastActionStep = vm.step == RegistrationStep.interests;
-    
-    // Step-based color for the primary button
     final Color buttonColor;
     switch (vm.step) {
-      case RegistrationStep.basicInfo:
-        buttonColor = AppColors.primary; // Coral
-        break;
-      case RegistrationStep.professional:
-        buttonColor = AppColors.secondary; // Blue
-        break;
-      case RegistrationStep.interests:
-        buttonColor = AppColors.accent; // Lime
-        break;
-      default:
+      case RegStep.phone:
+      case RegStep.otp:
         buttonColor = AppColors.primary;
+        break;
+      case RegStep.referral:
+      case RegStep.profile:
+        buttonColor = AppColors.secondary;
+        break;
+      case RegStep.rules:
+        buttonColor = AppColors.accent;
+        break;
     }
+
+    final bool isAccentStep = vm.step == RegStep.rules;
 
     return Container(
       padding: EdgeInsets.fromLTRB(
@@ -177,7 +170,8 @@ class _RegistrationContentState extends State<_RegistrationContent> {
           style: ElevatedButton.styleFrom(
             backgroundColor: buttonColor,
             disabledBackgroundColor: AppColors.border,
-            foregroundColor: vm.step == RegistrationStep.interests ? AppColors.textOnAccent : Colors.white,
+            foregroundColor:
+                isAccentStep ? AppColors.textOnAccent : Colors.white,
             disabledForegroundColor: AppColors.textDisabled,
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -188,29 +182,43 @@ class _RegistrationContentState extends State<_RegistrationContent> {
               fontWeight: FontWeight.w600,
             ),
           ),
-          child: Text(isLastActionStep ? 'Tamamla' : 'Devam Et'),
+          child: Text(_nextButtonLabel(vm.step)),
         ),
       ),
     );
   }
 
-  String _stepTitle(RegistrationStep step) {
+  String _stepTitle(RegStep step) {
     switch (step) {
-      case RegistrationStep.basicInfo:
-        return 'Temel Bilgiler';
-      case RegistrationStep.professional:
-        return 'Profesyonel Bilgiler';
-      case RegistrationStep.interests:
-        return 'İlgi Alanları';
-      case RegistrationStep.complete:
-        return '';
+      case RegStep.phone:
+        return 'Telefon Doğrulama';
+      case RegStep.otp:
+        return 'Kod Doğrulama';
+      case RegStep.referral:
+        return 'Davet Kodu';
+      case RegStep.profile:
+        return 'Profil Oluştur';
+      case RegStep.rules:
+        return 'Topluluk Kuralları';
+    }
+  }
+
+  String _nextButtonLabel(RegStep step) {
+    switch (step) {
+      case RegStep.phone:
+        return 'SMS Gönder';
+      case RegStep.otp:
+        return 'Doğrula';
+      case RegStep.referral:
+        return 'Devam Et';
+      case RegStep.profile:
+        return 'Devam Et';
+      case RegStep.rules:
+        return 'Anladım, Başla';
     }
   }
 }
 
-// ──────────────────────────────────────────────
-// Adım ilerleme çubuğu
-// ──────────────────────────────────────────────
 class _StepProgressBar extends StatelessWidget {
   const _StepProgressBar({required this.currentIndex, required this.total});
 
@@ -229,45 +237,43 @@ class _StepProgressBar extends StatelessWidget {
       child: Row(
         children: List.generate(total, (i) {
           final active = i <= currentIndex;
-          
+
           final Color stepColor;
           switch (i) {
-            case 0: stepColor = AppColors.primary; break;     // Coral
-            case 1: stepColor = AppColors.secondary; break;   // Blue
-            case 2: stepColor = AppColors.accent; break;      // Lime
-            default: stepColor = AppColors.primary;
+            case 0:
+            case 1:
+              stepColor = AppColors.primary;
+              break;
+            case 2:
+            case 3:
+              stepColor = AppColors.secondary;
+              break;
+            default:
+              stepColor = AppColors.accent;
           }
 
           return Expanded(
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 300),
-              margin:
-                  EdgeInsets.only(right: i < total - 1 ? AppSpacing.xs : 0),
+              margin: EdgeInsets.only(right: i < total - 1 ? AppSpacing.xs : 0),
               height: 4,
               decoration: BoxDecoration(
                 color: active ? stepColor : AppColors.border,
                 borderRadius: BorderRadius.circular(AppRadius.full),
-                boxShadow: active 
-                  ? [BoxShadow(color: stepColor.withValues(alpha: 0.25), blurRadius: 4)]
-                  : null,
+                boxShadow: active
+                    ? [
+                        BoxShadow(
+                          color: stepColor.withValues(alpha: 0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 1),
+                        ),
+                      ]
+                    : null,
               ),
             ),
           );
         }),
       ),
-    );
-  }
-}
-
-// ──────────────────────────────────────────────
-// Kayıt için kullanılan yardımcı navigasyon
-// ──────────────────────────────────────────────
-class RegistrationNavigation {
-  static void goToHome(BuildContext context) {
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRoutes.home,
-      (route) => false,
     );
   }
 }

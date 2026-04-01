@@ -3,104 +3,132 @@ import 'package:provider/provider.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_radius.dart';
-import '../../../core/theme/app_shadows.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../viewmodels/registration/registration_view_model.dart';
 
-class StepInterestsView extends StatelessWidget {
-  const StepInterestsView({super.key});
+class StepReferralView extends StatefulWidget {
+  const StepReferralView({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final vm = context.watch<RegistrationViewModel>();
-    final count = vm.draft.selectedInterests.length;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl, vertical: AppSpacing.base),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppSpacing.lg),
-          const Text('İlgi Alanlarınız',
-              style: AppTextStyles.displayMedium),
-          const SizedBox(height: AppSpacing.xs),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: Text(
-              count == 0
-                  ? 'En az 1 ilgi alanı seçin'
-                  : '$count alan seçildi  ·  max. 3',
-              key: ValueKey('$count'),
-              style: AppTextStyles.bodyLarge.copyWith(
-                color: count > 0
-                    ? AppColors.success
-                    : AppColors.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: RegistrationViewModel.availableInterests.map((interest) {
-              final selected =
-                  vm.draft.selectedInterests.contains(interest);
-              return _InterestChip(
-                label: interest,
-                isSelected: selected,
-                onTap: () => context
-                    .read<RegistrationViewModel>()
-                    .toggleInterest(interest),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: AppSpacing.xxxl),
-        ],
-      ),
-    );
-  }
+  State<StepReferralView> createState() => _StepReferralViewState();
 }
 
-class _InterestChip extends StatelessWidget {
-  const _InterestChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
+class _StepReferralViewState extends State<StepReferralView> {
+  late final TextEditingController _codeCtrl;
 
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
+  @override
+  void initState() {
+    super.initState();
+    final draft = context.read<RegistrationViewModel>().draft;
+    _codeCtrl = TextEditingController(text: draft.referralCode);
+  }
+
+  @override
+  void dispose() {
+    _codeCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.base,
         ),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(
-            color: isSelected ? AppColors.accent : AppColors.border,
-            width: isSelected ? 1.5 : 1,
-          ),
-          boxShadow: isSelected ? AppShadows.accentGlow : AppShadows.sm,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight:
-                isSelected ? FontWeight.w600 : FontWeight.w400,
-            color: isSelected ? AppColors.textOnAccent : AppColors.textSecondary,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.xxxl),
+            const Text(
+              'Seni kim davet etti?',
+              style: AppTextStyles.displayMedium,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Rivorya yalnızca davet yoluyla katılıma açıktır.\n'
+              'Referans kodun olmadan devam edemezsin.',
+              style: AppTextStyles.bodyLarge.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xxxl),
+            Container(
+              padding: const EdgeInsets.all(AppSpacing.base),
+              decoration: BoxDecoration(
+                color: AppColors.secondary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(
+                  color: AppColors.secondary.withValues(alpha: 0.2),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.link_rounded,
+                    color: AppColors.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    'Davet kodu, seni davet eden kişiden gelir',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.secondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            TextField(
+              controller: _codeCtrl,
+              autofocus: true,
+              textCapitalization: TextCapitalization.characters,
+              onChanged: (v) => context
+                  .read<RegistrationViewModel>()
+                  .updateReferralCode(v.trim()),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: AppColors.textPrimary,
+              ),
+              decoration: InputDecoration(
+                hintText: 'REFERANS KODU',
+                hintStyle: const TextStyle(
+                  color: AppColors.textDisabled,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1,
+                ),
+                filled: true,
+                fillColor: AppColors.surfaceVariant,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  borderSide: const BorderSide(
+                    color: AppColors.secondary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base,
+                  vertical: AppSpacing.md,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

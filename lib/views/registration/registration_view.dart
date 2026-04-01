@@ -6,7 +6,6 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_radius.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../services/linkedin_parser_service.dart';
 import '../../viewmodels/registration/registration_view_model.dart';
 import 'steps/step_basic_info_view.dart';
 import 'steps/step_complete_view.dart';
@@ -20,8 +19,7 @@ class RegistrationView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) =>
-          RegistrationViewModel(linkedInParser: LinkedInParserService()),
+      create: (_) => RegistrationViewModel(),
       child: const _RegistrationContent(),
     );
   }

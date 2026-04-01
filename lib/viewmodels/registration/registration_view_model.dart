@@ -8,7 +8,6 @@ import 'package:http/http.dart' as http;
 
 import '../../models/registration/expertise_item_model.dart';
 import '../../models/registration/registration_draft_model.dart';
-import '../../services/interfaces/i_linkedin_parser_service.dart';
 import '../base/base_view_model.dart';
 
 enum RegStep { phone, otp, referral, identity, expertise, interests, rules }
@@ -22,23 +21,15 @@ abstract class IExpertiseService {
 }
 
 class RegistrationViewModel extends BaseViewModel {
-  final ILinkedInParserService _linkedInParser;
   Timer? _expertiseDebounce;
 
-  RegistrationViewModel({required ILinkedInParserService linkedInParser})
-      : _linkedInParser = linkedInParser;
+  RegistrationViewModel()
+      : super();
 
-  static const List<String> availableInterests = [
-    'Yazılım', 'Tasarım', 'Girişimcilik', 'Pazarlama', 'Fintech',
-    'SaaS', 'AI / ML', 'Mobil Geliştirme', 'Veri Bilimi', 'DevOps',
-    'Grafik Tasarım', 'İçerik Üretimi', 'Fotoğrafçılık', 'Video',
-    'Sosyal Medya', 'SEO', 'PR & İletişim', 'Spor', 'Seyahat',
-    'Müzik', 'Kitap', 'Kafe Kültürü', 'Yemek', 'Podcast',
-  ];
+  // availableInterests removed
 
   RegStep _step = RegStep.phone;
   RegistrationDraftModel _draft = RegistrationDraftModel.empty;
-  bool _linkedInLoading = false;
   String _expertiseSearchQuery = '';
   bool _readyToNavigateHome = false;
   List<ExpertiseItem> _expertiseResults = [];
@@ -53,9 +44,11 @@ class RegistrationViewModel extends BaseViewModel {
   bool _occupationLoading = false;
   Timer? _occupationDebounce;
 
+  // Skills State
+  Map<String, List<String>> _skillsMap = {};
+
   RegStep get step => _step;
   RegistrationDraftModel get draft => _draft;
-  bool get linkedInLoading => _linkedInLoading;
   String get expertiseSearchQuery => _expertiseSearchQuery;
   int get stepIndex => RegStep.values.indexOf(_step);
   int get totalSteps => RegStep.values.length;
@@ -65,6 +58,19 @@ class RegistrationViewModel extends BaseViewModel {
   bool get hasMoreExpertise => _hasMoreExpertise;
   List<String> get occupationResults => _occupationResults;
   bool get occupationLoading => _occupationLoading;
+  Map<String, List<String>> get skillsMap => _skillsMap;
+
+  String formatSkillCategory(String key) {
+    if (key == 'yazilim_ve_teknoloji') return 'Yazılım ve Teknoloji';
+    if (key == 'tasarim_ve_yartici_isler') return 'Tasarım ve Yaratıcı İşler';
+    if (key == 'pazarlama_ve_sosyal_medya') return 'Pazarlama ve Sosyal Medya';
+    if (key == 'urun_ve_proje_yonetimi') return 'Ürün ve Proje Yönetimi';
+    if (key == 'is_gelistirme_ve_satis') return 'İş Geliştirme ve Satış';
+    if (key == 'insan_kaynaklari_ve_idari') return 'İnsan Kaynakları ve İdari';
+    if (key == 'finans_ve_danismanlik') return 'Finans ve Danışmanlık';
+    if (key == 'egitim_ve_diger_beyaz_yaka') return 'Eğitim ve Diğer';
+    return key.split('_').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ');
+  }
 
   bool get canGoNext {
     switch (_step) {
@@ -78,7 +84,7 @@ class RegistrationViewModel extends BaseViewModel {
         return _draft.photoBytes != null;
       case RegStep.expertise:
         return _draft.occupation.isNotEmpty && 
-               (_draft.selectedExpertise.isNotEmpty || _draft.cvFileName != null || _draft.linkedInConnected);
+               (_draft.selectedExpertise.isNotEmpty || _draft.cvFileName != null);
       case RegStep.interests:
         return _draft.selectedInterests.length >= 3;
       case RegStep.rules:
@@ -116,6 +122,19 @@ class RegistrationViewModel extends BaseViewModel {
       _allOccupations = List<String>.from(jsonDecode(jsonStr));
     } catch (e) {
       dev.log('Error loading occupations: $e');
+    }
+  }
+
+  Future<void> loadSkills() async {
+    if (_skillsMap.isNotEmpty) return;
+    try {
+      final jsonStr = await rootBundle.loadString('assets/skills.json');
+      final Map<String, dynamic> data = jsonDecode(jsonStr);
+      final roles = data['professional_roles'] as Map<String, dynamic>;
+      _skillsMap = roles.map((k, v) => MapEntry(k, List<String>.from(v)));
+      notifyListeners();
+    } catch (e) {
+      dev.log('Error loading skills: $e');
     }
   }
 
@@ -293,22 +312,6 @@ class RegistrationViewModel extends BaseViewModel {
 
   void clearNavigationFlag() {
     _readyToNavigateHome = false;
-  }
-
-  Future<void> connectLinkedIn(Uint8List bytes, String fileName) async {
-    _linkedInLoading = true;
-    clearError();
-    notifyListeners();
-
-    final res = await _linkedInParser.parsePdf(bytes, fileName);
-    _linkedInLoading = false;
-
-    if (res.isSuccess && res.data != null) {
-      _draft = _draft.copyWith(linkedInConnected: true);
-      notifyListeners();
-    } else {
-      setError(res.error?.message ?? 'LinkedIn bağlanamadı. Tekrar deneyin.');
-    }
   }
 
   @override

@@ -248,21 +248,6 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
     );
   }
 
-  Future<void> _connectLinkedIn(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
-    if (file.bytes == null || !context.mounted) return;
-    await context.read<RegistrationViewModel>().connectLinkedIn(
-      file.bytes!,
-      file.name,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<RegistrationViewModel>();
@@ -400,18 +385,6 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
             isCompleted: draft.cvFileName != null,
             onTap: () => _pickCv(context),
           ),
-          const SizedBox(height: AppSpacing.base),
-          _UploadTile(
-            title: 'LinkedIn Bağlantısı',
-            subtitle: draft.linkedInConnected
-                ? 'Profil rozeti aktif ✓'
-                : 'Profilini doğrula (PDF)',
-            icon: Icons.link_rounded,
-            isCompleted: draft.linkedInConnected,
-            onTap: vm.linkedInLoading ? null : () => _connectLinkedIn(context),
-            isLoading: vm.linkedInLoading,
-            color: const Color(0xFF0077B5),
-          ),
         ],
       ),
     );
@@ -421,61 +394,290 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
 // ─────────────────────────────────────────────────────────────────
 // STEP 3: INTERESTS
 // ─────────────────────────────────────────────────────────────────
-class StepInterestsView extends StatelessWidget {
+class StepInterestsView extends StatefulWidget {
   const StepInterestsView({super.key});
+
+  @override
+  State<StepInterestsView> createState() => _StepInterestsViewState();
+}
+
+class _StepInterestsViewState extends State<StepInterestsView> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RegistrationViewModel>().loadSkills();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  IconData _getCategoryIcon(String key) {
+    switch (key) {
+      case 'yazilim_ve_teknoloji': return Icons.code_rounded;
+      case 'tasarim_ve_yartici_isler': return Icons.palette_rounded;
+      case 'pazarlama_ve_sosyal_medya': return Icons.campaign_rounded;
+      case 'urun_ve_proje_yonetimi': return Icons.inventory_2_rounded;
+      case 'is_gelistirme_ve_satis': return Icons.trending_up_rounded;
+      case 'insan_kaynaklari_ve_idari': return Icons.people_alt_rounded;
+      case 'finans_ve_danismanlik': return Icons.account_balance_rounded;
+      case 'egitim_ve_diger_beyaz_yaka': return Icons.school_rounded;
+      default: return Icons.work_outline_rounded;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<RegistrationViewModel>();
     final draft = vm.draft;
+    final skillsMap = vm.skillsMap;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: AppSpacing.xxxl),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: const Icon(
-                  Icons.favorite_outline_rounded,
-                  color: AppColors.accentDark,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // FIXED HEADER
+        Container(
+          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxxl, AppSpacing.xl, AppSpacing.md),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
               ),
-              const SizedBox(width: AppSpacing.md),
-              const Text('İlgi Alanları', style: AppTextStyles.displayMedium),
             ],
           ),
-          const SizedBox(height: AppSpacing.base),
-          Text(
-            'Ortak noktalarda buluşabileceğin kişileri keşfetmek için en az 3 ilgi alanı seç.',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.textSecondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                   Hero(
+                    tag: 'interests_icon',
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      child: const Icon(
+                        Icons.psychology_alt_rounded,
+                        color: AppColors.secondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  const Text('Yetenekler', style: AppTextStyles.displayMedium),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                'Seni daha iyi eşleştirebilmemiz için yetkinliklerini seç.',
+                style: AppTextStyles.bodyMedium.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => _searchQuery = v),
+                      decoration: InputDecoration(
+                        hintText: 'Yetenek ara...',
+                        prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
+                        suffixIcon: _searchQuery.isNotEmpty 
+                          ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _searchQuery = '');
+                            }) 
+                          : null,
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                      ),
+                    ),
+                  ),
+                  if (draft.selectedInterests.isNotEmpty) ...[
+                    const SizedBox(width: 12),
+                    Badge(
+                      label: Text('${draft.selectedInterests.length}'),
+                      backgroundColor: AppColors.secondary,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check_rounded, color: AppColors.secondary, size: 20),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.base),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (skillsMap.isEmpty)
+                  const Center(child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: CircularProgressIndicator(),
+                  ))
+                else if (_searchQuery.isNotEmpty)
+                  _buildSearchResults(vm, draft)
+                else
+                  _buildGroupedList(vm, draft, skillsMap),
+                
+                const SizedBox(height: AppSpacing.xxxl),
+              ],
             ),
           ),
-          const SizedBox(height: AppSpacing.massive),
+        ),
+      ],
+    );
+  }
 
-          Wrap(
-            spacing: AppSpacing.xs,
-            runSpacing: AppSpacing.xs,
-            children: RegistrationViewModel.availableInterests.map((interest) {
-              final selected = draft.selectedInterests.contains(interest);
-              return _InterestChip(
-                label: interest,
-                isSelected: selected,
-                onTap: () => vm.toggleInterest(interest),
-              );
-            }).toList(),
+  Widget _buildSearchResults(RegistrationViewModel vm, dynamic draft) {
+    final allSkills = vm.skillsMap.values.expand((v) => v).where((s) => s.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+    
+    if (allSkills.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Column(
+            children: [
+              Icon(Icons.search_off_rounded, size: 48, color: AppColors.textDisabled.withValues(alpha: 0.5)),
+              const SizedBox(height: 12),
+              const Text('Sonuç bulunamadı', style: AppTextStyles.bodyMedium),
+            ],
           ),
-          const SizedBox(height: AppSpacing.massive),
-        ],
-      ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: allSkills.map((skill) {
+        final selected = draft.selectedInterests.contains(skill);
+        return _InterestChip(
+          label: skill,
+          isSelected: selected,
+          onTap: () => vm.toggleInterest(skill),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildGroupedList(RegistrationViewModel vm, dynamic draft, Map<String, List<String>> skillsMap) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...skillsMap.entries.map((entry) {
+          final title = vm.formatSkillCategory(entry.key);
+          final skills = entry.value;
+          final icon = _getCategoryIcon(entry.key);
+          final selectedInCategory = skills.where((s) => draft.selectedInterests.contains(s)).length;
+          
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.01),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  dividerColor: Colors.transparent,
+                  colorScheme: const ColorScheme.light(primary: AppColors.secondary),
+                ),
+                child: ExpansionTile(
+                  initiallyExpanded: selectedInCategory > 0,
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(icon, color: AppColors.secondary, size: 20),
+                  ),
+                  title: Text(
+                    title, 
+                    style: AppTextStyles.bodyLarge.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  trailing: selectedInCategory > 0 
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$selectedInCategory',
+                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      )
+                    : null,
+                  childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                  children: [
+                    const Divider(height: 1, color: AppColors.border),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: skills.map((skill) {
+                        final selected = draft.selectedInterests.contains(skill);
+                        return _InterestChip(
+                          label: skill,
+                          isSelected: selected,
+                          onTap: () => vm.toggleInterest(skill),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
@@ -509,8 +711,6 @@ class _UploadTile extends StatelessWidget {
     required this.icon,
     required this.isCompleted,
     required this.onTap,
-    this.isLoading = false,
-    this.color = AppColors.primary,
   });
 
   final String title;
@@ -518,11 +718,10 @@ class _UploadTile extends StatelessWidget {
   final IconData icon;
   final bool isCompleted;
   final VoidCallback? onTap;
-  final bool isLoading;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
+    const color = AppColors.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -561,7 +760,7 @@ class _UploadTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                   Text(
                     title,
                     style: TextStyle(
                       fontSize: 15,
@@ -580,16 +779,7 @@ class _UploadTile extends StatelessWidget {
                 ],
               ),
             ),
-            if (isLoading)
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: AppColors.secondary,
-                ),
-              )
-            else if (!isCompleted)
+            if (!isCompleted)
               const Icon(
                 Icons.chevron_right_rounded,
                 color: AppColors.textDisabled,
@@ -705,7 +895,7 @@ class _ExpertiseChip extends StatelessWidget {
   }
 }
 
-class _InterestChip extends StatelessWidget {
+class _InterestChip extends StatefulWidget {
   const _InterestChip({
     required this.label,
     required this.isSelected,
@@ -717,42 +907,79 @@ class _InterestChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_InterestChip> createState() => _InterestChipState();
+}
+
+class _InterestChipState extends State<_InterestChip> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.95).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? const LinearGradient(
-                  colors: [AppColors.accent, AppColors.accentDark],
-                )
-              : null,
-          color: isSelected ? null : AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(
-            color: isSelected ? AppColors.accentDark : AppColors.border,
-            width: 1.5,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) => _ctrl.reverse(),
+      onTapCancel: () => _ctrl.reverse(),
+      onTap: widget.onTap,
+      child: ScaleTransition(
+        scale: _scale,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: widget.isSelected ? AppColors.secondary : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(
+              color: widget.isSelected ? AppColors.secondary : AppColors.border,
+              width: 1.5,
+            ),
+            boxShadow: widget.isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.secondary.withValues(alpha: 0.25),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.02),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.accent.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
-            color: isSelected
-                ? AppColors.textOnAccent
-                : AppColors.textSecondary,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.isSelected) ...[
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: widget.isSelected
+                      ? Colors.white
+                      : AppColors.textSecondary,
+                ),
+              ),
+            ],
           ),
         ),
       ),

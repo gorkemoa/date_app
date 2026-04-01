@@ -15,7 +15,6 @@ class RegistrationDraftModel {
   final String? cvFileName;
   final List<String> selectedInterests;
   final List<ExpertiseItem> selectedExpertise;
-  final bool linkedInConnected;
 
   const RegistrationDraftModel({
     required this.phoneNumber,
@@ -30,7 +29,6 @@ class RegistrationDraftModel {
     this.cvFileName,
     required this.selectedInterests,
     required this.selectedExpertise,
-    required this.linkedInConnected,
   });
 
   static const RegistrationDraftModel empty = RegistrationDraftModel(
@@ -46,7 +44,6 @@ class RegistrationDraftModel {
     cvFileName: null,
     selectedInterests: [],
     selectedExpertise: [],
-    linkedInConnected: false,
   );
 
   RegistrationDraftModel copyWith({
@@ -62,7 +59,6 @@ class RegistrationDraftModel {
     String? cvFileName,
     List<String>? selectedInterests,
     List<ExpertiseItem>? selectedExpertise,
-    bool? linkedInConnected,
   }) {
     return RegistrationDraftModel(
       phoneNumber: phoneNumber ?? this.phoneNumber,
@@ -77,7 +73,6 @@ class RegistrationDraftModel {
       cvFileName: cvFileName ?? this.cvFileName,
       selectedInterests: selectedInterests ?? this.selectedInterests,
       selectedExpertise: selectedExpertise ?? this.selectedExpertise,
-      linkedInConnected: linkedInConnected ?? this.linkedInConnected,
     );
   }
 }

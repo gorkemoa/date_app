@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:story_view/story_view.dart' as sv;
+import 'package:story/story.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
@@ -41,9 +41,9 @@ void showStoryViewer(
 }
 
 // ──────────────────────────────────────────────
-// Ana Viewer ekranı — story_view paketi kullanır
+// Ana Viewer ekranı — story paketi kullanır
 // ──────────────────────────────────────────────
-class _StoryViewerScreen extends StatefulWidget {
+class _StoryViewerScreen extends StatelessWidget {
   const _StoryViewerScreen({
     required this.items,
     required this.initialIndex,
@@ -53,116 +53,64 @@ class _StoryViewerScreen extends StatefulWidget {
   final int initialIndex;
 
   @override
-  State<_StoryViewerScreen> createState() => _StoryViewerScreenState();
-}
-
-class _StoryViewerScreenState extends State<_StoryViewerScreen> {
-  late final sv.StoryController _controller;
-  late int _currentIndex;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = sv.StoryController();
-    _currentIndex = widget.initialIndex;
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  List<sv.StoryItem> _buildItems() {
-    return widget.items.asMap().entries.map((entry) {
-      final i = entry.key;
-      final item = entry.value;
-
-      final content = item.photoUrl != null
-          ? sv.StoryItem.pageImage(
-              url: item.photoUrl!,
-              controller: _controller,
-              shown: i < widget.initialIndex,
-              duration: const Duration(seconds: 5),
-              imageFit: BoxFit.cover,
-              loadingWidget: const Center(
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              ),
-              errorWidget: Container(
-                color: Colors.black,
-                child: const Center(
-                  child: Icon(Icons.person_rounded,
-                      color: Colors.white54, size: 64),
-                ),
-              ),
-            )
-          : sv.StoryItem(
-              Container(
-                color: Colors.black87,
-                child: const Center(
-                  child: Icon(Icons.person_rounded,
-                      color: Colors.white54, size: 64),
-                ),
-              ),
-              shown: i < widget.initialIndex,
-              duration: const Duration(seconds: 5),
-            );
-
-      return content;
-    }).toList();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.black,
-      child: Stack(
-        children: [
-          // ── story_view paketi — progress bar + gesture yönetimi ──
-          sv.StoryView(
-            storyItems: _buildItems(),
-            controller: _controller,
-            repeat: false,
-            inline: false,
-            progressPosition: sv.ProgressPosition.top,
-            indicatorColor: Colors.white.withValues(alpha: 0.30),
-            indicatorForegroundColor: Colors.white,
-            indicatorHeight: sv.IndicatorHeight.small,
-            indicatorOuterPadding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-            onComplete: () => Navigator.of(context).pop(),
-            onVerticalSwipeComplete: (direction) {
-              if (direction == sv.Direction.down) {
-                Navigator.of(context).pop();
-              }
-            },
-            onStoryShow: (_, index) {
-              WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-                if (mounted) {
-                  setState(() => _currentIndex = index);
-                }
-              });
-            },
-          ),
-
-          // ── Header overlay — isim, avatar, zaman + kapat ──
-          SafeArea(
-            bottom: false,
-            child: IgnorePointer(
-              // Sadece kapat butonu IgnorePointer dışında
-              ignoring: false,
+      child: StoryPageView(
+        itemBuilder: (context, pageIndex, storyIndex) {
+          final item = items[storyIndex];
+          if (item.photoUrl != null) {
+            return StoryImage(
+              key: ValueKey(item.photoUrl),
+              imageProvider: NetworkImage(item.photoUrl!),
+              fit: BoxFit.cover,
+            );
+          } else {
+            return Container(
+              color: Colors.black87,
+              child: const Center(
+                child: Icon(Icons.person_rounded,
+                    color: Colors.white54, size: 64),
+              ),
+            );
+          }
+        },
+        gestureItemBuilder: (context, pageIndex, storyIndex) {
+          return Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: MediaQuery.paddingOf(context).top + 26,
+              ),
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 30, 12, 0),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: _StoryHeader(
-                  item: widget.items[_currentIndex],
+                  item: items[storyIndex],
                   onClose: () => Navigator.of(context).pop(),
                 ),
               ),
             ),
-          ),
-        ],
+          );
+        },
+        pageLength: 1,
+        storyLength: (int pageIndex) {
+          return items.length;
+        },
+        initialStoryIndex: (int pageIndex) {
+          return initialIndex;
+        },
+        onPageLimitReached: () {
+          Navigator.of(context).pop();
+        },
+        indicatorDuration: const Duration(seconds: 5),
+        indicatorPadding: EdgeInsets.only(
+          top: MediaQuery.paddingOf(context).top + 10,
+          left: 12,
+          right: 12,
+        ),
+        indicatorHeight: 2,
+        indicatorVisitedColor: Colors.white,
+        indicatorUnvisitedColor: Colors.white.withValues(alpha: 0.30),
       ),
     );
   }

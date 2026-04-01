@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as dev;
 import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../../models/registration/expertise_item_model.dart';
@@ -35,45 +36,35 @@ class RegistrationViewModel extends BaseViewModel {
     'Müzik', 'Kitap', 'Kafe Kültürü', 'Yemek', 'Podcast',
   ];
 
-  static const List<String> expertiseCategories = [
-    'Software', 'Design', 'Language + Framework', 'İş Geliştirme', 'Pazarlama',
-    'Finans', 'Hukuk', 'Sağlık', 'Eğitim', 'Medya',
-  ];
-
-  static const Map<String, String> _svgCategoryMap = {
-    'Software': 'Software',
-    'Design': 'Design',
-    'Language + Framework': 'Framework',
-    'Finans': 'Finance',
-    'Sağlık': 'Health',
-    'Eğitim': 'Education',
-    'Medya': 'Media',
-    'İş Geliştirme': 'Business',
-    'Pazarlama': 'Social',
-  };
-
   RegStep _step = RegStep.phone;
   RegistrationDraftModel _draft = RegistrationDraftModel.empty;
   bool _linkedInLoading = false;
   String _expertiseSearchQuery = '';
-  String? _selectedExpertiseCategory = 'Teknoloji';
   bool _readyToNavigateHome = false;
   List<ExpertiseItem> _expertiseResults = [];
   bool _expertiseSearchLoading = false;
-  int _expertiseOffset = 0;
   bool _hasMoreExpertise = true;
+
+  int _expertiseOffset = 0;
+
+  // Job / Occupation State
+  List<String> _allOccupations = [];
+  List<String> _occupationResults = [];
+  bool _occupationLoading = false;
+  Timer? _occupationDebounce;
 
   RegStep get step => _step;
   RegistrationDraftModel get draft => _draft;
   bool get linkedInLoading => _linkedInLoading;
   String get expertiseSearchQuery => _expertiseSearchQuery;
-  String? get selectedExpertiseCategory => _selectedExpertiseCategory;
   int get stepIndex => RegStep.values.indexOf(_step);
   int get totalSteps => RegStep.values.length;
   bool get readyToNavigateHome => _readyToNavigateHome;
   List<ExpertiseItem> get expertiseResults => List.unmodifiable(_expertiseResults);
   bool get expertiseSearchLoading => _expertiseSearchLoading;
   bool get hasMoreExpertise => _hasMoreExpertise;
+  List<String> get occupationResults => _occupationResults;
+  bool get occupationLoading => _occupationLoading;
 
   bool get canGoNext {
     switch (_step) {
@@ -86,7 +77,8 @@ class RegistrationViewModel extends BaseViewModel {
       case RegStep.identity:
         return _draft.photoBytes != null;
       case RegStep.expertise:
-        return _draft.selectedExpertise.isNotEmpty || _draft.cvFileName != null;
+        return _draft.occupation.isNotEmpty && 
+               (_draft.selectedExpertise.isNotEmpty || _draft.cvFileName != null || _draft.linkedInConnected);
       case RegStep.interests:
         return _draft.selectedInterests.length >= 3;
       case RegStep.rules:
@@ -114,6 +106,43 @@ class RegistrationViewModel extends BaseViewModel {
       displayName: displayName ?? _draft.displayName,
       bio: bio ?? _draft.bio,
     );
+    notifyListeners();
+  }
+
+  Future<void> loadOccupations() async {
+    if (_allOccupations.isNotEmpty) return;
+    try {
+      final jsonStr = await rootBundle.loadString('assets/meslekler.json');
+      _allOccupations = List<String>.from(jsonDecode(jsonStr));
+    } catch (e) {
+      dev.log('Error loading occupations: $e');
+    }
+  }
+
+  void searchOccupations(String query) {
+    _occupationDebounce?.cancel();
+    if (query.trim().length < 2) {
+      _occupationResults = [];
+      _occupationLoading = false;
+      notifyListeners();
+      return;
+    }
+
+    _occupationLoading = true;
+    notifyListeners();
+
+    _occupationDebounce = Timer(const Duration(seconds: 1), () {
+      _occupationResults = _allOccupations
+          .where((o) => o.toLowerCase().contains(query.toLowerCase()))
+          .toList();
+      _occupationLoading = false;
+      notifyListeners();
+    });
+  }
+
+  void selectOccupation(String occupation) {
+    _draft = _draft.copyWith(occupation: occupation);
+    _occupationResults = [];
     notifyListeners();
   }
 
@@ -163,9 +192,7 @@ class RegistrationViewModel extends BaseViewModel {
     _hasMoreExpertise = true;
     _expertiseResults = [];
     
-    // Query boş olsa bile sonuçlar kalsın (kategori bazlı görünüm için)
     if (query.trim().isEmpty) {
-      searchExpertiseIcons('');
       notifyListeners();
       return;
     }
@@ -173,16 +200,6 @@ class RegistrationViewModel extends BaseViewModel {
     _expertiseDebounce = Timer(const Duration(milliseconds: 400), () {
       searchExpertiseIcons(query);
     });
-    notifyListeners();
-  }
-
-  void setExpertiseCategory(String? category) {
-    if (_selectedExpertiseCategory == category) return;
-    _selectedExpertiseCategory = category;
-    _expertiseOffset = 0;
-    _hasMoreExpertise = true;
-    _expertiseResults = [];
-    searchExpertiseIcons(_expertiseSearchQuery);
     notifyListeners();
   }
 
@@ -208,15 +225,9 @@ class RegistrationViewModel extends BaseViewModel {
       final formattedQuery = query.trim().toLowerCase().replaceAll(' ', '-');
       if (formattedQuery.isNotEmpty) {
         queryParams['q'] = formattedQuery;
-      }
-
-      if (_selectedExpertiseCategory != null) {
-        final mappedCat = _svgCategoryMap[_selectedExpertiseCategory!];
-        if (mappedCat != null) queryParams['category'] = mappedCat;
-      }
-      
-      if (queryParams['q'] == null && queryParams['category'] == null) {
-        queryParams['category'] = 'Software';
+      } else {
+        // Eğer query boşsa default bir şeyler çekelim ki boş kalmasın veya boş dönsün
+        queryParams['category'] = 'Software'; 
       }
 
       final uri = Uri.https('www.thesvg.org', '/api/registry', queryParams);

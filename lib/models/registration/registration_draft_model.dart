@@ -9,6 +9,7 @@ class RegistrationDraftModel {
   final String displayName;
   final Uint8List? photoBytes;
   final String? photoFileName;
+  final String occupation;
   final String bio;
   final Uint8List? cvBytes;
   final String? cvFileName;
@@ -23,6 +24,7 @@ class RegistrationDraftModel {
     required this.displayName,
     this.photoBytes,
     this.photoFileName,
+    required this.occupation,
     required this.bio,
     this.cvBytes,
     this.cvFileName,
@@ -38,6 +40,7 @@ class RegistrationDraftModel {
     displayName: '',
     photoBytes: null,
     photoFileName: null,
+    occupation: '',
     bio: '',
     cvBytes: null,
     cvFileName: null,
@@ -53,6 +56,7 @@ class RegistrationDraftModel {
     String? displayName,
     Uint8List? photoBytes,
     String? photoFileName,
+    String? occupation,
     String? bio,
     Uint8List? cvBytes,
     String? cvFileName,
@@ -67,6 +71,7 @@ class RegistrationDraftModel {
       displayName: displayName ?? this.displayName,
       photoBytes: photoBytes ?? this.photoBytes,
       photoFileName: photoFileName ?? this.photoFileName,
+      occupation: occupation ?? this.occupation,
       bio: bio ?? this.bio,
       cvBytes: cvBytes ?? this.cvBytes,
       cvFileName: cvFileName ?? this.cvFileName,

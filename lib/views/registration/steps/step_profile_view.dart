@@ -208,8 +208,30 @@ class _StepIdentityViewState extends State<StepIdentityView> {
 // ─────────────────────────────────────────────────────────────────
 // STEP 2: EXPERTISE (CV & Skills)
 // ─────────────────────────────────────────────────────────────────
-class StepExpertiseView extends StatelessWidget {
+class StepExpertiseView extends StatefulWidget {
   const StepExpertiseView({super.key});
+
+  @override
+  State<StepExpertiseView> createState() => _StepExpertiseViewState();
+}
+
+class _StepExpertiseViewState extends State<StepExpertiseView> {
+  final TextEditingController _occupationCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RegistrationViewModel>().loadOccupations();
+      _occupationCtrl.text = context.read<RegistrationViewModel>().draft.occupation;
+    });
+  }
+
+  @override
+  void dispose() {
+    _occupationCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickCv(BuildContext context) async {
     final result = await FilePicker.platform.pickFiles(
@@ -274,13 +296,67 @@ class StepExpertiseView extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.base),
           Text(
-            'Kangi alanlarda uzmansın? CV ve LinkedIn profilinle yetkinliklerini kanıtla.',
+            'Profesyonel unvanını belirle ve yetkinliklerini kanıtla.',
             style: AppTextStyles.bodyMedium.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: AppSpacing.massive),
 
+          const _SectionHeader(title: 'Meslek / Ünvan'),
+          const SizedBox(height: AppSpacing.md),
+          
+          TextField(
+            controller: _occupationCtrl,
+            onChanged: (v) => vm.searchOccupations(v),
+            decoration: InputDecoration(
+              hintText: 'Örn: Yazılım Mühendisi, Tasarımcı...',
+              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textDisabled),
+              filled: true,
+              fillColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                borderSide: BorderSide.none,
+              ),
+              suffixIcon: vm.occupationLoading 
+                ? const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  )
+                : null,
+            ),
+          ),
+
+          if (vm.occupationResults.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: vm.occupationResults.length,
+                itemBuilder: (context, index) {
+                  final occ = vm.occupationResults[index];
+                  return ListTile(
+                    title: Text(occ, style: AppTextStyles.bodyMedium),
+                    onTap: () {
+                      vm.selectOccupation(occ);
+                      _occupationCtrl.text = occ;
+                      FocusScope.of(context).unfocus();
+                    },
+                  );
+                },
+              ),
+            ),
+
+          const SizedBox(height: AppSpacing.massive),
           const _SectionHeader(title: 'Yetenek Kartları'),
           const SizedBox(height: AppSpacing.md),
 

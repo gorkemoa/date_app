@@ -74,6 +74,28 @@ class _NearbyViewState extends State<NearbyView> with TickerProviderStateMixin {
     }
   }
 
+  void _selectNext() {
+    final vm = context.read<NearbyViewModel>();
+    final users = vm.nearbyUsers;
+    if (users.isEmpty || vm.selectedUser == null) return;
+    final currentIndex = users.indexWhere((u) => u.id == vm.selectedUser!.id);
+    if (currentIndex == -1) return;
+    
+    final nextIndex = (currentIndex + 1) % users.length;
+    _selectAndFlyTo(users[nextIndex]);
+  }
+
+  void _selectPrevious() {
+    final vm = context.read<NearbyViewModel>();
+    final users = vm.nearbyUsers;
+    if (users.isEmpty || vm.selectedUser == null) return;
+    final currentIndex = users.indexWhere((u) => u.id == vm.selectedUser!.id);
+    if (currentIndex == -1) return;
+    
+    final prevIndex = (currentIndex - 1 + users.length) % users.length;
+    _selectAndFlyTo(users[prevIndex]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<NearbyViewModel>();
@@ -108,24 +130,34 @@ class _NearbyViewState extends State<NearbyView> with TickerProviderStateMixin {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (vm.selectedUser != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.base,
-                    0,
-                    AppSpacing.base,
-                    AppSpacing.sm,
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity == null) return;
+                    if (details.primaryVelocity! > 200) {
+                      _selectPrevious();
+                    } else if (details.primaryVelocity! < -200) {
+                      _selectNext();
+                    }
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.base,
+                      0,
+                      AppSpacing.base,
+                      AppSpacing.sm,
+                    ),
+                    child: vm.selectedUser!.isPrivate
+                        ? _PrivateProfileCard(
+                            user: vm.selectedUser!,
+                            onClose: () =>
+                                context.read<NearbyViewModel>().selectUser(null),
+                          )
+                        : _PublicProfileCard(
+                            user: vm.selectedUser!,
+                            onClose: () =>
+                                context.read<NearbyViewModel>().selectUser(null),
+                          ),
                   ),
-                  child: vm.selectedUser!.isPrivate
-                      ? _PrivateProfileCard(
-                          user: vm.selectedUser!,
-                          onClose: () =>
-                              context.read<NearbyViewModel>().selectUser(null),
-                        )
-                      : _PublicProfileCard(
-                          user: vm.selectedUser!,
-                          onClose: () =>
-                              context.read<NearbyViewModel>().selectUser(null),
-                        ),
                 ),
               _NearbyBottomBar(vm: vm, onTap: _selectAndFlyTo),
             ],

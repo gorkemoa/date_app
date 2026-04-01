@@ -138,6 +138,7 @@ class RegistrationViewModel extends BaseViewModel {
     }
   }
 
+
   void searchOccupations(String query) {
     _occupationDebounce?.cancel();
     if (query.trim().length < 2) {

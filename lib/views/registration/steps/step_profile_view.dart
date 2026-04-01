@@ -223,7 +223,10 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<RegistrationViewModel>().loadOccupations();
-      _occupationCtrl.text = context.read<RegistrationViewModel>().draft.occupation;
+      _occupationCtrl.text = context
+          .read<RegistrationViewModel>()
+          .draft
+          .occupation;
     });
   }
 
@@ -290,25 +293,32 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
 
           const _SectionHeader(title: 'Meslek / Ünvan'),
           const SizedBox(height: AppSpacing.md),
-          
+
           TextField(
             controller: _occupationCtrl,
             onChanged: (v) => vm.searchOccupations(v),
             decoration: InputDecoration(
               hintText: 'Örn: Yazılım Mühendisi, Tasarımcı...',
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textDisabled),
+              prefixIcon: const Icon(
+                Icons.search_rounded,
+                color: AppColors.textDisabled,
+              ),
               filled: true,
               fillColor: AppColors.surfaceVariant.withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 borderSide: BorderSide.none,
               ),
-              suffixIcon: vm.occupationLoading 
-                ? const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                  )
-                : null,
+              suffixIcon: vm.occupationLoading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : null,
             ),
           ),
 
@@ -320,7 +330,11 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
                 color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4)),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
                 ],
               ),
               child: ListView.builder(
@@ -346,12 +360,10 @@ class _StepExpertiseViewState extends State<StepExpertiseView> {
           const SizedBox(height: AppSpacing.md),
 
           if (draft.selectedExpertise.isNotEmpty)
-            Wrap(
-              spacing: AppSpacing.xs,
-              runSpacing: AppSpacing.xs,
+            Column(
               children: draft.selectedExpertise
                   .map(
-                    (e) => _ExpertiseChip(
+                    (e) => _ExpertiseListTile(
                       item: e,
                       onDeleted: () => vm.toggleExpertise(e),
                     ),
@@ -404,6 +416,7 @@ class StepInterestsView extends StatefulWidget {
 class _StepInterestsViewState extends State<StepInterestsView> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  String? _selectedCategory;
 
   @override
   void initState() {
@@ -419,20 +432,6 @@ class _StepInterestsViewState extends State<StepInterestsView> {
     super.dispose();
   }
 
-  IconData _getCategoryIcon(String key) {
-    switch (key) {
-      case 'yazilim_ve_teknoloji': return Icons.code_rounded;
-      case 'tasarim_ve_yartici_isler': return Icons.palette_rounded;
-      case 'pazarlama_ve_sosyal_medya': return Icons.campaign_rounded;
-      case 'urun_ve_proje_yonetimi': return Icons.inventory_2_rounded;
-      case 'is_gelistirme_ve_satis': return Icons.trending_up_rounded;
-      case 'insan_kaynaklari_ve_idari': return Icons.people_alt_rounded;
-      case 'finans_ve_danismanlik': return Icons.account_balance_rounded;
-      case 'egitim_ve_diger_beyaz_yaka': return Icons.school_rounded;
-      default: return Icons.work_outline_rounded;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final vm = context.watch<RegistrationViewModel>();
@@ -442,242 +441,307 @@ class _StepInterestsViewState extends State<StepInterestsView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // FIXED HEADER
-        Container(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xxxl, AppSpacing.xl, AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.background,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.02),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+        const SizedBox(height: AppSpacing.xxxl),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                   Hero(
-                    tag: 'interests_icon',
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.secondary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: const Icon(
-                        Icons.psychology_alt_rounded,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  const Text('Yetenekler', style: AppTextStyles.displayMedium),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
+              const Text('Yetenekler', style: AppTextStyles.displayMedium),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Seni daha iyi eşleştirebilmemiz için yetkinliklerini seç.',
                 style: AppTextStyles.bodyMedium.copyWith(
                   color: AppColors.textSecondary,
                 ),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: (v) => setState(() => _searchQuery = v),
-                      decoration: InputDecoration(
-                        hintText: 'Yetenek ara...',
-                        prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.textSecondary),
-                        suffixIcon: _searchQuery.isNotEmpty 
-                          ? IconButton(icon: const Icon(Icons.clear, size: 18), onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _searchQuery = '');
-                            }) 
-                          : null,
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
-                          borderSide: const BorderSide(color: AppColors.border),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                      ),
-                    ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _searchCtrl,
+                onChanged: (v) => setState(() => _searchQuery = v),
+                decoration: InputDecoration(
+                  hintText: 'Yetenek ara...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 16),
+                          onPressed: () {
+                            _searchCtrl.clear();
+                            setState(() => _searchQuery = '');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: AppColors.surfaceVariant,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    borderSide: BorderSide.none,
                   ),
-                  if (draft.selectedInterests.isNotEmpty) ...[
-                    const SizedBox(width: 12),
-                    Badge(
-                      label: Text('${draft.selectedInterests.length}'),
-                      backgroundColor: AppColors.secondary,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.check_rounded, color: AppColors.secondary, size: 20),
-                      ),
-                    ),
-                  ],
-                ],
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                ),
               ),
             ],
           ),
         ),
 
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.base),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (skillsMap.isEmpty)
-                  const Center(child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: CircularProgressIndicator(),
-                  ))
-                else if (_searchQuery.isNotEmpty)
-                  _buildSearchResults(vm, draft)
-                else
-                  _buildGroupedList(vm, draft, skillsMap),
-                
-                const SizedBox(height: AppSpacing.xxxl),
-              ],
+        if (draft.selectedInterests.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+              scrollDirection: Axis.horizontal,
+              itemCount: draft.selectedInterests.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final skill = draft.selectedInterests[index];
+                return _SelectedSmallChip(
+                  label: skill,
+                  onDelete: () => vm.toggleInterest(skill),
+                );
+              },
             ),
           ),
+        ],
+
+        const SizedBox(height: AppSpacing.base),
+        const Divider(height: 1, color: AppColors.border),
+
+        Expanded(
+          child: skillsMap.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : _searchQuery.isNotEmpty
+              ? _buildSearchResults(vm, draft)
+              : _selectedCategory == null
+              ? _buildCategoryList(vm)
+              : _buildCategoryDetail(vm, draft),
         ),
       ],
     );
   }
 
   Widget _buildSearchResults(RegistrationViewModel vm, dynamic draft) {
-    final allSkills = vm.skillsMap.values.expand((v) => v).where((s) => s.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
-    
-    if (allSkills.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Column(
-            children: [
-              Icon(Icons.search_off_rounded, size: 48, color: AppColors.textDisabled.withValues(alpha: 0.5)),
-              const SizedBox(height: 12),
-              const Text('Sonuç bulunamadı', style: AppTextStyles.bodyMedium),
-            ],
-          ),
-        ),
-      );
-    }
+    final results = vm.skillsMap.values
+        .expand((x) => x)
+        .where((s) => s.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: allSkills.map((skill) {
-        final selected = draft.selectedInterests.contains(skill);
-        return _InterestChip(
+    if (results.isEmpty) return const Center(child: Text('Sonuç bulunamadı'));
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      itemCount: results.length,
+      itemBuilder: (context, index) {
+        final skill = results[index];
+        final isSelected = draft.selectedInterests.contains(skill);
+        return _SkillListTile(
           label: skill,
-          isSelected: selected,
+          isSelected: isSelected,
           onTap: () => vm.toggleInterest(skill),
         );
-      }).toList(),
+      },
     );
   }
 
-  Widget _buildGroupedList(RegistrationViewModel vm, dynamic draft, Map<String, List<String>> skillsMap) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ...skillsMap.entries.map((entry) {
-          final title = vm.formatSkillCategory(entry.key);
-          final skills = entry.value;
-          final icon = _getCategoryIcon(entry.key);
-          final selectedInCategory = skills.where((s) => draft.selectedInterests.contains(s)).length;
-          
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
+  Widget _buildCategoryList(RegistrationViewModel vm) {
+    final skillsMap = vm.skillsMap;
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        AppSpacing.md,
+        AppSpacing.xl,
+        100,
+      ),
+      itemCount: skillsMap.length,
+      separatorBuilder: (_, __) => const Divider(height: 1, indent: 48),
+      itemBuilder: (context, index) {
+        final key = skillsMap.keys.elementAt(index);
+        return ListTile(
+          onTap: () => setState(() => _selectedCategory = key),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 8,
+          ),
+          leading: Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.01),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+              color: AppColors.secondary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: const Icon(
+              Icons.folder_open_rounded,
+              color: AppColors.secondary,
+              size: 20,
+            ),
+          ),
+          title: Text(
+            vm.formatSkillCategory(key),
+            style: AppTextStyles.bodyLarge.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          trailing: const Icon(
+            Icons.chevron_right_rounded,
+            color: AppColors.textDisabled,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryDetail(RegistrationViewModel vm, dynamic draft) {
+    if (_selectedCategory == null) return const SizedBox.shrink();
+    final skills = vm.skillsMap[_selectedCategory] ?? [];
+
+    return Column(
+      children: [
+        // BACK HEADER
+        InkWell(
+          onTap: () => setState(() => _selectedCategory = null),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              12,
+              AppSpacing.xl,
+              12,
+            ),
+            color: AppColors.surfaceVariant.withValues(alpha: 0.3),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  size: 14,
+                  color: AppColors.secondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Kategorilere Dön',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: AppColors.secondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  vm.formatSkillCategory(_selectedCategory!).toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                    color: AppColors.textDisabled,
+                  ),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  dividerColor: Colors.transparent,
-                  colorScheme: const ColorScheme.light(primary: AppColors.secondary),
-                ),
-                child: ExpansionTile(
-                  initiallyExpanded: selectedInCategory > 0,
-                  leading: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Icon(icon, color: AppColors.secondary, size: 20),
-                  ),
-                  title: Text(
-                    title, 
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  trailing: selectedInCategory > 0 
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.secondary,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$selectedInCategory',
-                          style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                        ),
-                      )
-                    : null,
-                  childrenPadding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                  children: [
-                    const Divider(height: 1, color: AppColors.border),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: skills.map((skill) {
-                        final selected = draft.selectedInterests.contains(skill);
-                        return _InterestChip(
-                          label: skill,
-                          isSelected: selected,
-                          onTap: () => vm.toggleInterest(skill),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
+          ),
+        ),
+        const Divider(height: 1),
+
+        // DETAIL LIST
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              0,
+              AppSpacing.xl,
+              100,
             ),
-          );
-        }),
+            itemCount: skills.length,
+            itemBuilder: (context, index) {
+              final skill = skills[index];
+              final isSelected = draft.selectedInterests.contains(skill);
+              return _SkillListTile(
+                label: skill,
+                isSelected: isSelected,
+                onTap: () => vm.toggleInterest(skill),
+              );
+            },
+          ),
+        ),
       ],
+    );
+  }
+}
+
+class _SkillListTile extends StatelessWidget {
+  const _SkillListTile({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ListTile(
+          onTap: onTap,
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 2,
+          ),
+          leading: Icon(
+            isSelected
+                ? Icons.check_circle_rounded
+                : Icons.add_circle_outline_rounded,
+            color: isSelected ? AppColors.secondary : AppColors.textDisabled,
+            size: 20,
+          ),
+          title: Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: isSelected ? AppColors.secondary : AppColors.textPrimary,
+              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ),
+        const Divider(height: 1, indent: 40),
+      ],
+    );
+  }
+}
+
+class _SelectedSmallChip extends StatelessWidget {
+  const _SelectedSmallChip({required this.label, required this.onDelete});
+  final String label;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 6, 8, 6),
+      decoration: BoxDecoration(
+        color: AppColors.secondary,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onDelete,
+            child: const Icon(
+              Icons.close_rounded,
+              color: Colors.white,
+              size: 14,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -760,7 +824,7 @@ class _UploadTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                   Text(
+                  Text(
                     title,
                     style: TextStyle(
                       fontSize: 15,
@@ -840,149 +904,50 @@ class _ExpertiseAddButton extends StatelessWidget {
   }
 }
 
-class _ExpertiseChip extends StatelessWidget {
-  const _ExpertiseChip({required this.item, required this.onDeleted});
+class _ExpertiseListTile extends StatelessWidget {
+  const _ExpertiseListTile({required this.item, required this.onDeleted});
   final ExpertiseItem item;
   final VoidCallback onDeleted;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+    return Column(
+      children: [
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: SafeSvgPicture.network(
+              item.iconUrl,
+              width: 20,
+              height: 20,
+              fit: BoxFit.contain,
+              placeholder: const SizedBox(width: 20, height: 20),
+            ),
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SafeSvgPicture.network(
-            item.iconUrl,
-            width: 16,
-            height: 16,
-            fit: BoxFit.contain,
-            placeholder: const SizedBox(width: 16, height: 16),
-          ),
-          const SizedBox(width: 8),
-          Text(
+          title: Text(
             item.title,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: FontWeight.w700,
               color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onDeleted,
-            child: const Icon(
-              Icons.cancel_rounded,
-              size: 16,
+          trailing: IconButton(
+            icon: const Icon(
+              Icons.close_rounded,
+              size: 20,
               color: AppColors.textDisabled,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InterestChip extends StatefulWidget {
-  const _InterestChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  State<_InterestChip> createState() => _InterestChipState();
-}
-
-class _InterestChipState extends State<_InterestChip> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 100));
-    _scale = Tween<double>(begin: 1.0, end: 0.95).animate(_ctrl);
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (_) => _ctrl.forward(),
-      onTapUp: (_) => _ctrl.reverse(),
-      onTapCancel: () => _ctrl.reverse(),
-      onTap: widget.onTap,
-      child: ScaleTransition(
-        scale: _scale,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: widget.isSelected ? AppColors.secondary : AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(
-              color: widget.isSelected ? AppColors.secondary : AppColors.border,
-              width: 1.5,
-            ),
-            boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: AppColors.secondary.withValues(alpha: 0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.02),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (widget.isSelected) ...[
-                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                widget.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: widget.isSelected ? FontWeight.w800 : FontWeight.w600,
-                  color: widget.isSelected
-                      ? Colors.white
-                      : AppColors.textSecondary,
-                ),
-              ),
-            ],
+            onPressed: onDeleted,
           ),
         ),
-      ),
+        const Divider(height: 1, indent: 64),
+      ],
     );
   }
 }

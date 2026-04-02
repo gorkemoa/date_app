@@ -30,6 +30,12 @@ class DateApp extends StatelessWidget {
       theme: AppTheme.light,
       initialRoute: AppRoutes.onboarding,
       routes: AppRoutes.routes,
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+          child: child,
+        );
+      },
     );
   }
 }

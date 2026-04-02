@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -9,7 +10,6 @@ import '../../models/profile/profile_model.dart';
 import '../../viewmodels/profile/profile_view_model.dart';
 import '../shared/components/loading_view.dart';
 import '../shared/components/error_state_view.dart';
-
 import '../../viewmodels/registration/registration_view_model.dart';
 
 class ProfileView extends StatefulWidget {
@@ -35,14 +35,14 @@ class _ProfileViewState extends State<ProfileView> {
 
     if (vm.isLoading) {
       return const Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         body: LoadingView(),
       );
     }
 
     if (vm.hasError) {
       return Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         body: ErrorStateView(
           message: vm.errorMessage,
           onRetry: () => context.read<ProfileViewModel>().loadProfile(),
@@ -54,26 +54,39 @@ class _ProfileViewState extends State<ProfileView> {
     if (profile == null) return const SizedBox.shrink();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
         slivers: [
-          SliverToBoxAdapter(child: _ProfileHeroHeader(profile: profile)),
-          SliverToBoxAdapter(child: _ProfileActionBar()),
-          if (profile.profileCompletionPercent != null &&
-              profile.profileCompletionPercent! < 100)
-            SliverToBoxAdapter(
-              child: _CompletionCard(
-                percent: profile.profileCompletionPercent!,
+          _ExecutiveProfileHeader(profile: profile),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _ExecutiveInfo(profile: profile),
+                  const SizedBox(height: 32),
+                  _ExecutiveActions(),
+                  if (profile.profileCompletionPercent != null && profile.profileCompletionPercent! < 100) ...[
+                    const SizedBox(height: 32),
+                    _NetworkStrengthCard(percent: profile.profileCompletionPercent!),
+                  ],
+                  if (profile.bio != null) ...[
+                    const SizedBox(height: 48),
+                    _ProfileSection(title: 'Hakkımda', content: profile.bio!),
+                  ],
+                  if (profile.interests.isNotEmpty) ...[
+                    const SizedBox(height: 32),
+                    _SkillCloud(interests: profile.interests),
+                  ],
+                  const SizedBox(height: 48),
+                  _SettingsMenu(),
+                  const SizedBox(height: 140),
+                ],
               ),
             ),
-          if (profile.bio != null)
-            SliverToBoxAdapter(child: _BioCard(bio: profile.bio!)),
-          if (profile.interests.isNotEmpty)
-            SliverToBoxAdapter(
-              child: _ExpertiseCard(interests: profile.interests),
-            ),
-          SliverToBoxAdapter(child: _SettingsCard()),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
+          ),
         ],
       ),
     );
@@ -81,561 +94,436 @@ class _ProfileViewState extends State<ProfileView> {
 }
 
 // ──────────────────────────────────────────────
-// Hero header
+// Executive Header
 // ──────────────────────────────────────────────
-class _ProfileHeroHeader extends StatelessWidget {
-  const _ProfileHeroHeader({required this.profile});
-
+class _ExecutiveProfileHeader extends StatelessWidget {
+  const _ExecutiveProfileHeader({required this.profile});
   final ProfileModel profile;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
-      ),
-      child: Column(
-        children: [
-          // Header Background / Cover
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                height: 140,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.secondary, AppColors.secondaryLight],
-                  ),
-                ),
-              ),
-              // Profile Action Bar Overlay
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.refresh,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () => (),
-                        ),
-                        IconButton(
-                          icon: const Icon(
-                            Icons.more_horiz_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                          onPressed: () {},
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              // Avatar
-              Positioned(
-                bottom: -50,
-                left: AppSpacing.xl,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: const BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      image: profile.primaryPhoto != null
-                          ? DecorationImage(
-                              image: NetworkImage(profile.primaryPhoto!),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      color: AppColors.surfaceVariant,
-                    ),
-                    child: profile.primaryPhoto == null
-                        ? Center(
-                            child: Text(
-                              profile.name[0].toUpperCase(),
-                              style: AppTextStyles.displayLarge.copyWith(
-                                color: AppColors.textDisabled,
-                                fontSize: 40,
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 60),
-
-          // Info Area
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      profile.name,
-                      style: AppTextStyles.displayMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    if (profile.isVerified) ...[
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.verified_rounded,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
-                    ],
+    return SliverAppBar(
+      expandedHeight: 360,
+      backgroundColor: Colors.white,
+      automaticallyImplyLeading: false,
+      pinned: true,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (profile.primaryPhoto != null)
+              Image.network(profile.primaryPhoto!, fit: BoxFit.cover)
+            else
+              Container(color: AppColors.secondary),
+            
+            // Sophisticated Shading
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.5, 0.85, 1.0],
+                  colors: [
+                    Colors.black26,
+                    Colors.transparent,
+                    Colors.black54,
+                    Colors.white,
                   ],
                 ),
-                if (profile.occupation != null) ...[
-                  const SizedBox(height: 4),
+              ),
+            ),
+
+            // Top Buttons
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 12,
+              right: 20,
+              child: Row(
+                children: [
+                  _GlassIconButton(icon: Icons.qr_code_rounded, onTap: () {}),
+                  const SizedBox(width: 12),
+                  _GlassIconButton(icon: Icons.logout_rounded, onTap: () {}, color: Colors.white.withValues(alpha: 0.8)),
+                ],
+              ),
+            ),
+
+            // Identity Overlay
+            Positioned(
+              left: 24,
+              bottom: 32,
+              right: 24,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    profile.occupation!,
-                    style: AppTextStyles.bodyLarge.copyWith(
-                      color: AppColors.secondary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                    profile.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 42,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.5,
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (profile.location != null) ...[
-                      const Icon(
-                        Icons.location_on_rounded,
-                        size: 14,
-                        color: AppColors.textDisabled,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        profile.location!,
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                    ],
-                    const Icon(
-                      Icons.business_center_rounded,
-                      size: 14,
-                      color: AppColors.textDisabled,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Profesyonel Ağ',
-                      style: AppTextStyles.caption.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 // ──────────────────────────────────────────────
-// Hızlı eylem çubuğu
+// Info & Headline
 // ──────────────────────────────────────────────
-class _ProfileActionBar extends StatelessWidget {
-  const _ProfileActionBar();
+class _ExecutiveInfo extends StatelessWidget {
+  const _ExecutiveInfo({required this.profile});
+  final ProfileModel profile;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.md,
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.secondary, AppColors.secondaryLight],
-                ),
-                borderRadius: BorderRadius.circular(AppRadius.base),
-                boxShadow: AppShadows.secondaryGlow,
-              ),
-              child: const Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.edit_outlined,
-                      size: 16,
-                      color: AppColors.textOnSecondary,
-                    ),
-                    SizedBox(width: AppSpacing.xs),
-                    Text(
-                      'Profili Düzenle',
-                      style: TextStyle(
-                        color: AppColors.textOnSecondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          profile.occupation ?? 'Profesyonel Üye',
+          style: AppTextStyles.headingLarge.copyWith(
+            color: AppColors.textPrimary,
+            fontSize: 24,
           ),
-          const SizedBox(width: AppSpacing.sm),
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(AppRadius.base),
-              border: Border.all(color: AppColors.border),
-              boxShadow: AppShadows.sm,
-            ),
-            child: const Icon(
-              Icons.share_outlined,
-              size: 18,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _LabelMetric(label: 'Konum', value: profile.location ?? 'Global'),
+            const SizedBox(width: 32),
+            _LabelMetric(label: 'Rol', value: profile.isVerified ? 'Onaylı Partner' : 'Profesyonel'),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _LabelMetric extends StatelessWidget {
+  const _LabelMetric({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: AppTextStyles.labelSmall.copyWith(letterSpacing: 1.2)),
+        const SizedBox(height: 2),
+        Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+      ],
     );
   }
 }
 
 // ──────────────────────────────────────────────
-// Profil tamamlanma kartı
+// Professional Actions
 // ──────────────────────────────────────────────
-class _CompletionCard extends StatelessWidget {
-  const _CompletionCard({required this.percent});
+class _ExecutiveActions extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _SolidButton(
+            label: 'PROFİLİ DÜZENLE',
+            onTap: () {},
+            icon: Icons.edit_note_rounded,
+          ),
+        ),
+        const SizedBox(width: 12),
+        _SecondaryActionButton(icon: Icons.ios_share_rounded, onTap: () {}),
+      ],
+    );
+  }
+}
 
+// ──────────────────────────────────────────────
+// Network Strength / Completion
+// ──────────────────────────────────────────────
+class _NetworkStrengthCard extends StatelessWidget {
+  const _NetworkStrengthCard({required this.percent});
   final int percent;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.base,
-        AppSpacing.xs,
-        AppSpacing.base,
-        AppSpacing.xs,
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.secondary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.1)),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.base),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.insights_rounded,
-                  size: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'PROFİL GÜCÜ',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                   color: AppColors.secondary,
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Text(
-                  'Ağ Bağlantı Gücü',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '%$percent',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: AppColors.secondary,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              child: LinearProgressIndicator(
-                value: percent / 100,
-                backgroundColor: AppColors.surfaceVariant.withValues(
-                  alpha: 0.5,
-                ),
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.secondary,
-                ),
-                minHeight: 8,
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Profilini zenginleştirerek daha nitelikli bağlantılar kur.',
-              style: AppTextStyles.caption.copyWith(
-                color: AppColors.textSecondary,
+              Text(
+                '%$percent',
+                style: const TextStyle(
+                  color: AppColors.secondary,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: percent / 100,
+              backgroundColor: AppColors.secondary.withValues(alpha: 0.1),
+              valueColor: const AlwaysStoppedAnimation(AppColors.secondary),
+              minHeight: 8,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Profesyonel ağınızı genişletmek için eksik bilgileri tamamlayın.',
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+        ],
       ),
     );
   }
 }
 
 // ──────────────────────────────────────────────
-// Bio kartı
+// Modular Components
 // ──────────────────────────────────────────────
-class _BioCard extends StatelessWidget {
-  const _BioCard({required this.bio});
-
-  final String bio;
+class _ProfileSection extends StatelessWidget {
+  const _ProfileSection({required this.title, required this.content});
+  final String title;
+  final String content;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.base,
-        AppSpacing.xs,
-        AppSpacing.base,
-        AppSpacing.xs,
-      ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.base),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.sm,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: title),
+        const SizedBox(height: 16),
+        Text(
+          content,
+          style: AppTextStyles.bodyLarge.copyWith(height: 1.7, color: AppColors.textSecondary),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Hakkında', style: AppTextStyles.labelLarge),
-            const SizedBox(height: AppSpacing.sm),
-            Text(bio, style: AppTextStyles.bodyMedium),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
 
-// ──────────────────────────────────────────────
-// Uzmanlık ve Yetkinlikler kartı
-// ──────────────────────────────────────────────
-class _ExpertiseCard extends StatelessWidget {
-  const _ExpertiseCard({required this.interests});
-
+class _SkillCloud extends StatelessWidget {
+  const _SkillCloud({required this.interests});
   final List<String> interests;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.base,
-        AppSpacing.xs,
-        AppSpacing.base,
-        AppSpacing.xs,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: 'Uzmanlıklar & Yetkinlikler'),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: interests.map((i) => _SkillBadge(label: i)).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: AppTextStyles.headingSmall.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 6),
+        Container(width: 24, height: 4, decoration: BoxDecoration(color: AppColors.secondary, borderRadius: BorderRadius.circular(2))),
+      ],
+    );
+  }
+}
+
+class _SkillBadge extends StatelessWidget {
+  const _SkillBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: AppColors.border),
       ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(AppSpacing.base),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.star_rounded,
-                  size: 18,
-                  color: AppColors.secondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Uzmanlık ve Yetkinlikler',
-                  style: AppTextStyles.labelLarge,
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: interests.map((interest) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    interest,
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+      child: Text(
+        label,
+        style: AppTextStyles.labelMedium.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
       ),
     );
   }
 }
 
 // ──────────────────────────────────────────────
-// Ayarlar kartı
+// Settings Menu
 // ──────────────────────────────────────────────
-class _SettingsCard extends StatelessWidget {
-  const _SettingsCard();
+class _SettingsMenu extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _MenuTile(icon: Icons.notifications_none_rounded, label: 'Bildirimler'),
+        _MenuTile(icon: Icons.shield_outlined, label: 'Gizlilik ve Güvenlik'),
+        _MenuTile(icon: Icons.help_outline_rounded, label: 'Yardım Merkezi'),
+      ],
+    );
+  }
+}
+
+class _MenuTile extends StatelessWidget {
+  const _MenuTile({required this.icon, required this.label});
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.base,
-        AppSpacing.xs,
-        AppSpacing.base,
-        AppSpacing.xs,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-          boxShadow: AppShadows.sm,
-        ),
-        child: Column(
-          children: [
-            _SettingsTile(
-              icon: Icons.notifications_outlined,
-              label: 'Bildirimler',
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: AppColors.textPrimary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w600),
             ),
-            const Divider(height: 1, color: AppColors.border, indent: 56),
-            _SettingsTile(icon: Icons.lock_outline_rounded, label: 'Gizlilik'),
-            const Divider(height: 1, color: AppColors.border, indent: 56),
-            _SettingsTile(icon: Icons.help_outline_rounded, label: 'Yardım'),
-            const Divider(height: 1, color: AppColors.border, indent: 56),
-            _SettingsTile(
-              icon: Icons.logout_rounded,
-              label: 'Çıkış Yap',
-              color: AppColors.error,
-            ),
-          ],
-        ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textDisabled),
+        ],
       ),
     );
   }
 }
 
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({required this.icon, required this.label, this.color});
-
+// ──────────────────────────────────────────────
+// Base UI Elements
+// ──────────────────────────────────────────────
+class _GlassIconButton extends StatelessWidget {
+  const _GlassIconButton({required this.icon, required this.onTap, this.color});
   final IconData icon;
-  final String label;
+  final VoidCallback onTap;
   final Color? color;
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppColors.textSecondary;
     return GestureDetector(
-      onTap: () {},
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.base,
-          vertical: AppSpacing.md,
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.2),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: color ?? Colors.white, size: 20),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SolidButton extends StatelessWidget {
+  const _SolidButton({required this.label, required this.onTap, this.icon});
+  final String label;
+  final VoidCallback onTap;
+  final IconData? icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 54,
+        decoration: BoxDecoration(
+          color: AppColors.textPrimary,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: AppShadows.md,
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: effectiveColor.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(AppRadius.sm),
+            if (icon != null) ...[Icon(icon, color: Colors.white, size: 18), const SizedBox(width: 8)],
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.5,
               ),
-              child: Icon(icon, size: 16, color: effectiveColor),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: color ?? AppColors.textPrimary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              size: 18,
-              color: AppColors.textDisabled,
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _SecondaryActionButton extends StatelessWidget {
+  const _SecondaryActionButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 54,
+        height: 54,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border, width: 1.5),
+        ),
+        child: Icon(icon, color: AppColors.textPrimary, size: 20),
       ),
     );
   }

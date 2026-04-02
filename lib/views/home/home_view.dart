@@ -9,6 +9,7 @@ import '../../viewmodels/matches/matches_view_model.dart';
 import '../../viewmodels/nearby/nearby_view_model.dart';
 import '../../viewmodels/profile/profile_view_model.dart';
 import '../../viewmodels/notifications/notifications_view_model.dart';
+import '../../viewmodels/events/events_view_model.dart';
 import '../../services/demo/demo_discover_service.dart';
 import '../../services/demo/demo_match_service.dart';
 import '../../services/demo/demo_nearby_service.dart';
@@ -18,6 +19,7 @@ import '../discover/discover_view.dart';
 import '../matches/matches_view.dart';
 import '../nearby/nearby_view.dart';
 import '../profile/profile_view.dart';
+import '../events/events_view.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -27,6 +29,7 @@ class HomeView extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
+        ChangeNotifierProvider(create: (_) => EventsViewModel()),
         ChangeNotifierProvider(
           create: (_) => NearbyViewModel(nearbyService: DemoNearbyService()),
         ),
@@ -57,6 +60,7 @@ class _HomeContent extends StatelessWidget {
   static const List<Widget> _pages = [
     NearbyView(),
     DiscoverView(),
+    EventsView(),
     MatchesView(),
     ProfileView(),
   ];
@@ -80,16 +84,18 @@ class _AppBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onTap;
 
-  static const _labels = ['Yakında', 'Keşfet', 'Bağlantılar', 'Profil'];
+  static const _labels = ['Yakında', 'Keşfet', 'Etkinlikler', 'Bağlantılar', 'Profil'];
   static const _icons = [
     Icons.location_on_outlined,
     Icons.explore_outlined,
+    Icons.event_outlined,
     Icons.people_outline_rounded,
     Icons.person_outline_rounded,
   ];
   static const _activeIcons = [
     Icons.location_on_rounded,
     Icons.explore_rounded,
+    Icons.event_rounded,
     Icons.people_rounded,
     Icons.person_rounded,
   ];
@@ -114,11 +120,11 @@ class _AppBottomNavBar extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base,
+            horizontal: AppSpacing.sm,
             vertical: AppSpacing.sm,
           ),
           child: Row(
-            children: List.generate(4, (i) {
+            children: List.generate(5, (i) {
               final isActive = i == selectedIndex;
               final tabColor = AppColors.primary;
               return Expanded(
